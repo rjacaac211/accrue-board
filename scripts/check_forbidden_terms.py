@@ -38,8 +38,8 @@ BINARY_SNIFF_BYTES = 8192
 
 
 def _git(*args: str) -> str:
-    return subprocess.run(
-        ["git", *args],
+    return subprocess.run(  # noqa: S603 - fixed git subcommands, no user input
+        ["git", *args],  # noqa: S607 - git is resolved from PATH by design
         check=True,
         capture_output=True,
         text=True,
@@ -60,9 +60,7 @@ def load_terms() -> list[re.Pattern[str]]:
     raw = os.environ.get("FORBIDDEN_TERMS", "")
     if not raw.strip():
         try:
-            list_path = Path(
-                _git("rev-parse", "--git-path", "info/forbidden-terms.txt").strip()
-            )
+            list_path = Path(_git("rev-parse", "--git-path", "info/forbidden-terms.txt").strip())
         except (subprocess.CalledProcessError, FileNotFoundError):
             list_path = Path(".git/info/forbidden-terms.txt")
         if list_path.is_file():
@@ -140,9 +138,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--all", action="store_true", help="scan all tracked files")
-    mode.add_argument(
-        "--history", action="store_true", help="scan all commits, messages and refs"
-    )
+    mode.add_argument("--history", action="store_true", help="scan all commits, messages and refs")
     mode.add_argument("--commit-msg", metavar="FILE", help="scan a commit message file")
     parser.add_argument(
         "--require-terms",
@@ -154,7 +150,9 @@ def main(argv: list[str] | None = None) -> int:
 
     terms = load_terms()
     if not terms:
-        msg = "no forbidden-terms list configured (FORBIDDEN_TERMS or .git/info/forbidden-terms.txt)"
+        msg = (
+            "no forbidden-terms list configured (FORBIDDEN_TERMS or .git/info/forbidden-terms.txt)"
+        )
         if args.require_terms:
             print(f"error: {msg}", file=sys.stderr)
             return 2
@@ -169,9 +167,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"commit message:{lineno}: {label}")
         failures = len(hits)
     elif args.all:
-        failures = scan_files(
-            [p for p in _git("ls-files", "-z").split("\0") if p], terms
-        )
+        failures = scan_files([p for p in _git("ls-files", "-z").split("\0") if p], terms)
     else:
         failures = scan_files(args.files, terms)
 

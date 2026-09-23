@@ -13,9 +13,16 @@ uv run accrueboard sample             # one document per layout -> data/sample/ 
 1. **Ground truth first.** Each document starts as a structured record: what is printed on it,
    the correct account for every line, and any anomaly it carries. The PDF or PNG is rendered
    from that record afterwards, so extraction, coding and flagging can all be scored exactly.
-2. **Deterministic.** The same seed produces byte-identical records and files. ReportLab runs
-   in invariant mode, and raster noise comes from a seeded generator. A test regenerates the
-   whole dataset and compares hashes.
+2. **Deterministic, on any OS.** The same seed produces byte-identical records and files on
+   Windows and Linux; this was verified by comparing hashes of a full dataset generated on each.
+   - ReportLab runs in invariant mode.
+   - PNG receipt scans are drawn with Pillow (bundled FreeType) and an embedded TrueType font,
+     not by rasterizing PDFs, because PDF renderers differ between platforms.
+   - PNGs are encoded with the standard library's zlib.
+   - Raster noise is seeded.
+
+   This matters because recorded model responses are keyed by input bytes. A test regenerates
+   the whole dataset and compares hashes.
 3. **Objective anomaly definitions.** Each anomaly is defined by a property of the data in
    [`anomalies.yaml`](../backend/src/accrueboard/datagen/specs/anomalies.yaml), not by what a
    detector happens to flag. For example, an amount outlier is "at least 8× the vendor's history

@@ -4,21 +4,27 @@ Six invoice styles differ in fonts, header placement, labels, date and money for
 taxable lines are marked, so extraction cannot rely on one fixed position or spelling. Every
 value in the ground truth is printed on the page; nothing extraction is scored on is hidden.
 
-Output is deterministic: ReportLab runs in invariant mode (no timestamps or random ids in the
-file) and raster noise comes from a seeded generator.
+Output is deterministic across runs and operating systems: ReportLab runs in invariant mode (no
+timestamps or random ids in the file), receipt scans are drawn with Pillow's bundled FreeType,
+and raster noise comes from a seeded generator.
 """
 
 import io
 import random
+import struct
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
-import pypdfium2 as pdfium
-from PIL import Image
+import reportlab
+from PIL import Image, ImageDraw, ImageFont
 from reportlab.lib.colors import Color, HexColor, black
 from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 
 from accrueboard.datagen.records import GroundTruth
@@ -383,82 +389,175 @@ def _render_bill(record: GroundTruth, vendor: VendorSpec, client: ClientSpec) ->
 
 # ---------------------------------------------------------------------------- receipts
 
+# Receipts come as PDFs or as phone-style PNG scans. Both are painted from the same rows, in
+# Bitstream Vera (shipped with ReportLab). The PNG is drawn directly with Pillow, whose bundled
+# FreeType produces identical pixels on every OS; rasterizing the PDF instead would not, because
+# PDF renderers differ between platforms. Identical bytes keep recorded model responses
+# replayable on any machine.
+RECEIPT_FONT, RECEIPT_BOLD = "AccrueVera", "AccrueVeraBold"
+_FONT_DIR = Path(reportlab.__file__).parent / "fonts"
+RECEIPT_WIDTH = 226.0  # points (80 mm till roll)
+_MARGIN = 14.0
 
-def _render_receipt(record: GroundTruth, vendor: VendorSpec) -> bytes:
+
+@dataclass(frozen=True)
+class ReceiptRow:
+    advance: float
+    """Vertical distance from the previous row, in points."""
+    left: str = ""
+    right: str = ""
+    center: str = ""
+    size: float = 7.5
+    bold: bool = False
+    indent: float = 0.0
+    rule: bool = False
+
+
+def receipt_rows(record: GroundTruth, vendor: VendorSpec) -> list[ReceiptRow]:
     doc = record.document
-    style = Style(
-        font="Courier",
-        bold="Courier-Bold",
-        accent=black,
-        title="RECEIPT",
-        number_label="",
-        date_label="",
-        due_label="",
-        date_format="%m/%d/%Y",
-        money=money_plain,
-        header="center",
-        grid=False,
-        taxable_marker="column",
-        tax_label="",
-        total_label="",
-        terms_note="",
-    )
-    width = 226.0
-    height = 330.0 + 26 * len(doc.lines)
-    buffer = io.BytesIO()
-    canvas = _canvas(buffer, (width, height), vendor, f"Receipt {doc.document_number}")
-    page = _Page(canvas, style, width, height)
-    mid, left, right = width / 2, 14.0, width - 14.0
-    y = height - 30
-    page.text(mid, y, vendor.name.upper(), size=10, bold=True, align="center")
-    for line in vendor.address:
-        y -= 11
-        page.text(mid, y, line, size=7.5, align="center")
-    y -= 20
-    time_text = record.received_at.strftime("%H:%M")
-    page.text(left, y, f"Date: {page.fmt_date(doc.issue_date)}  {time_text}", size=7.5)
-    y -= 11
-    page.text(left, y, f"Receipt #: {doc.document_number}", size=7.5)
-    y -= 8
-    page.text(left, y, "-" * 42, size=7.5)
+    assert doc.subtotal is not None
+    assert doc.total is not None
+    issued = doc.issue_date.strftime("%m/%d/%Y") if doc.issue_date else ""
+    rows = [ReceiptRow(advance=30, center=vendor.name.upper(), size=10, bold=True)]
+    rows += [ReceiptRow(advance=11, center=line) for line in vendor.address]
+    rows += [
+        ReceiptRow(advance=20, left=f"Date: {issued}  {record.received_at:%H:%M}"),
+        ReceiptRow(advance=11, left=f"Receipt #: {doc.document_number}"),
+        ReceiptRow(advance=5, rule=True),
+    ]
     for item in doc.lines:
-        y -= 12
-        page.text(left, y, item.description[:34], size=7.5)
-        y -= 10
         tag = " T" if item.taxable else "  "
-        detail = f"{quantity(item.quantity)} @ {money_plain(item.unit_price)}"
-        page.text(left + 10, y, detail, size=7.5)
-        page.text(right, y, f"{money_plain(item.amount)}{tag}", size=7.5, align="right")
-    y -= 8
-    page.text(left, y, "-" * 42, size=7.5)
-    assert doc.subtotal is not None and doc.total is not None
-    rows = [("SUBTOTAL", doc.subtotal)]
+        rows += [
+            ReceiptRow(advance=12, left=item.description[:34]),
+            ReceiptRow(
+                advance=10,
+                left=f"{quantity(item.quantity)} @ {money_plain(item.unit_price)}",
+                right=f"{money_plain(item.amount)}{tag}",
+                indent=10,
+            ),
+        ]
+    rows.append(ReceiptRow(advance=5, rule=True))
+    totals = [("SUBTOTAL", doc.subtotal)]
     if doc.discount > 0:
-        rows.append(("DISCOUNT", -doc.discount))
+        totals.append(("DISCOUNT", -doc.discount))
     if doc.shipping > 0:
-        rows.append(("SHIPPING", doc.shipping))
+        totals.append(("SHIPPING", doc.shipping))
     if doc.tax > 0:
         label = f"TAX {percent(doc.tax_rate)}" if doc.tax_rate is not None else "SALES TAX"
-        rows.append((label, doc.tax))
-    for label, value in rows:
-        y -= 12
-        page.text(left, y, label, size=7.5)
-        page.text(right, y, money_plain(value), size=7.5, align="right")
-    y -= 15
-    page.text(left, y, "TOTAL", size=9, bold=True)
-    page.text(right, y, money_dollar(doc.total), size=9, bold=True, align="right")
-    y -= 18
+        totals.append((label, doc.tax))
+    rows += [ReceiptRow(advance=12, left=label, right=money_plain(v)) for label, v in totals]
     last4 = random.Random(f"{vendor.id}:card").randint(1000, 9999)
-    page.text(left, y, f"VISA ************{last4}", size=7.5)
-    y -= 10
-    page.text(left, y, "PAID - CARD SALE APPROVED", size=7.5)
-    y -= 22
-    page.text(mid, y, "T = taxable item", size=6.5, align="center")
-    y -= 10
-    page.text(mid, y, "THANK YOU FOR SHOPPING WITH US", size=7, align="center")
+    rows += [
+        ReceiptRow(advance=15, left="TOTAL", right=money_dollar(doc.total), size=9, bold=True),
+        ReceiptRow(advance=18, left=f"VISA ************{last4}"),
+        ReceiptRow(advance=10, left="PAID - CARD SALE APPROVED"),
+        ReceiptRow(advance=22, center="T = taxable item", size=6.5),
+        ReceiptRow(advance=10, center="THANK YOU FOR SHOPPING WITH US", size=7),
+    ]
+    return rows
+
+
+def _receipt_height(rows: list[ReceiptRow]) -> float:
+    return sum(row.advance for row in rows) + 40
+
+
+def _receipt_fonts() -> None:
+    registered = pdfmetrics.getRegisteredFontNames()
+    if RECEIPT_FONT not in registered:
+        pdfmetrics.registerFont(TTFont(RECEIPT_FONT, str(_FONT_DIR / "Vera.ttf")))
+    if RECEIPT_BOLD not in registered:
+        pdfmetrics.registerFont(TTFont(RECEIPT_BOLD, str(_FONT_DIR / "VeraBd.ttf")))
+
+
+def _render_receipt(record: GroundTruth, vendor: VendorSpec) -> bytes:
+    _receipt_fonts()
+    rows = receipt_rows(record, vendor)
+    width, height = RECEIPT_WIDTH, _receipt_height(rows)
+    buffer = io.BytesIO()
+    canvas = _canvas(buffer, (width, height), vendor, f"Receipt {record.document.document_number}")
+    left, right, mid = _MARGIN, width - _MARGIN, width / 2
+    y = height
+    for row in rows:
+        y -= row.advance
+        if row.rule:
+            canvas.setLineWidth(0.5)
+            canvas.line(left, y, right, y)
+            continue
+        canvas.setFont(RECEIPT_BOLD if row.bold else RECEIPT_FONT, row.size)
+        if row.center:
+            canvas.drawCentredString(mid, y, row.center)
+        if row.left:
+            canvas.drawString(left + row.indent, y, row.left)
+        if row.right:
+            canvas.drawRightString(right, y, row.right)
     canvas.showPage()
     canvas.save()
     return buffer.getvalue()
+
+
+def _receipt_png(record: GroundTruth, vendor: VendorSpec, *, seed: str, dpi: int = 200) -> bytes:
+    """A slightly rotated, noisy grayscale scan of the receipt, drawn directly with Pillow."""
+    rows = receipt_rows(record, vendor)
+    scale = dpi / 72
+    width_pt, height_pt = RECEIPT_WIDTH, _receipt_height(rows)
+    image = Image.new("L", (round(width_pt * scale), round(height_pt * scale)), 255)
+    draw = ImageDraw.Draw(image)
+    fonts: dict[tuple[bool, float], ImageFont.FreeTypeFont] = {}
+
+    def font(bold: bool, size: float) -> ImageFont.FreeTypeFont:
+        key = (bold, size)
+        if key not in fonts:
+            name = "VeraBd.ttf" if bold else "Vera.ttf"
+            fonts[key] = ImageFont.truetype(str(_FONT_DIR / name), round(size * scale))
+        return fonts[key]
+
+    left, right, mid = _MARGIN * scale, (width_pt - _MARGIN) * scale, width_pt * scale / 2
+    y = 0.0
+    for row in rows:
+        y += row.advance * scale
+        if row.rule:
+            draw.line([(left, y), (right, y)], fill=0, width=max(1, round(0.5 * scale)))
+            continue
+        face = font(row.bold, row.size)
+        if row.center:
+            draw.text((mid, y), row.center, font=face, fill=0, anchor="ms")
+        if row.left:
+            draw.text((left + row.indent * scale, y), row.left, font=face, fill=0, anchor="ls")
+        if row.right:
+            draw.text((right, y), row.right, font=face, fill=0, anchor="rs")
+
+    rng = random.Random(seed)
+    image = image.rotate(
+        rng.uniform(-1.5, 1.5), resample=Image.Resampling.BICUBIC, expand=True, fillcolor=255
+    )
+    noise = Image.frombytes("L", image.size, rng.randbytes(image.size[0] * image.size[1]))
+    image = Image.blend(image, noise, 0.07)
+    return encode_gray_png(image)
+
+
+def encode_gray_png(image: Image.Image) -> bytes:
+    """Encode an 8-bit grayscale image as PNG using the standard library's zlib.
+
+    Pillow's encoder links its own compression library, which differs between platforms, so the
+    same pixels can compress to different bytes. Encoding here keeps files byte-identical.
+    """
+    if image.mode != "L":
+        raise ValueError("expected an 8-bit grayscale ('L') image")
+    width, height = image.size
+    raw = image.tobytes()
+    scanlines = b"".join(b"\x00" + raw[row * width : (row + 1) * width] for row in range(height))
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 0, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(scanlines, 6))
+        + chunk(b"IEND", b"")
+    )
 
 
 # ---------------------------------------------------------------------------- unsupported docs
@@ -554,29 +653,9 @@ def render_pdf(record: GroundTruth, client: ClientSpec) -> bytes:
     return _render_bill(record, vendor, client)
 
 
-def rasterize(pdf: bytes, *, seed: str, dpi: int = 200) -> bytes:
-    """Render the first page to a slightly rotated, noisy grayscale PNG (a phone-like scan)."""
-    rng = random.Random(seed)
-    document = pdfium.PdfDocument(pdf)
-    try:
-        page = document[0]
-        # pypdfium2 annotates scale as int, but fractional scales are supported.
-        bitmap = page.render(scale=dpi / 72)  # pyright: ignore[reportArgumentType]
-        image = bitmap.to_pil().convert("L")
-    finally:
-        document.close()
-    angle = rng.uniform(-1.5, 1.5)
-    image = image.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=255)
-    noise = Image.frombytes("L", image.size, rng.randbytes(image.size[0] * image.size[1]))
-    image = Image.blend(image, noise, 0.07)
-    out = io.BytesIO()
-    image.save(out, format="PNG", optimize=False)
-    return out.getvalue()
-
-
 def render(record: GroundTruth, client: ClientSpec) -> bytes:
     """Bytes of the file for ``record`` in its declared format."""
-    pdf = render_pdf(record, client)
     if record.file_format == "png":
-        return rasterize(pdf, seed=f"{record.client_id}:{record.doc_id}")
-    return pdf
+        vendor = client.vendor(record.vendor_id)
+        return _receipt_png(record, vendor, seed=f"{record.client_id}:{record.doc_id}")
+    return render_pdf(record, client)

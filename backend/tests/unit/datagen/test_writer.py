@@ -114,3 +114,8 @@ def test_sample_command(tmp_path: Path) -> None:
         p.name for p in tmp_path.iterdir() if p.suffix in {".pdf", ".png"}
     }
     assert len(truth) >= 10
+
+
+def test_text_files_use_lf_line_endings(dataset: Path) -> None:
+    for name in ("manifest.json", "history.jsonl", "validation.jsonl", "test.jsonl"):
+        assert b"\r\n" not in (dataset / name).read_bytes(), name

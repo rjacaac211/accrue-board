@@ -26,12 +26,18 @@ class DatasetDirError(RuntimeError):
 
 def _prepare(target: Path) -> None:
     if target.exists():
-        if not (target / "manifest.json").is_file():
+        if any(target.iterdir()) and not (target / "manifest.json").is_file():
             raise DatasetDirError(
                 f"{target} exists but is not a generated dataset; refusing to overwrite it"
             )
-        shutil.rmtree(target)
-    target.mkdir(parents=True)
+        # Clear the contents rather than the directory itself, which may be in use
+        # (e.g. a shell's working directory on Windows).
+        for child in target.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+    target.mkdir(parents=True, exist_ok=True)
 
 
 def build_manifest(records: list[GroundTruth], spec: ClientSpec, seed: int) -> Manifest:
@@ -71,7 +77,7 @@ def write_dataset(
     for split in Split:
         lines = [r.model_dump_json() for r in records if r.split is split]
         (target / f"{split.value}.jsonl").write_text(
-            "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8"
+            "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8", newline="\n"
         )
 
     if render_files:
@@ -92,6 +98,7 @@ def write_dataset(
     (target / "manifest.json").write_text(
         json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     return target
 

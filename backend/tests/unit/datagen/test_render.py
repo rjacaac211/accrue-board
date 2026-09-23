@@ -9,7 +9,7 @@ from PIL import Image
 
 from accrueboard.datagen.generate import generate
 from accrueboard.datagen.records import GroundTruth
-from accrueboard.datagen.render import STYLES, percent, render, render_pdf
+from accrueboard.datagen.render import STYLES, encode_gray_png, percent, render, render_pdf
 from accrueboard.datagen.spec import (
     EVAL_SPLITS,
     ClientSpec,
@@ -112,3 +112,16 @@ def test_png_receipts_are_images(samples: list[GroundTruth], spec: ClientSpec) -
 )
 def test_percent_format(rate: str, text: str) -> None:
     assert percent(Decimal(rate)) == text
+
+
+def test_png_encoder_round_trips_pixels() -> None:
+    image = Image.frombytes("L", (7, 3), bytes(range(21)))
+    decoded = Image.open(io.BytesIO(encode_gray_png(image)))
+    assert decoded.mode == "L"
+    assert decoded.size == (7, 3)
+    assert decoded.tobytes() == image.tobytes()
+
+
+def test_png_encoder_rejects_colour_images() -> None:
+    with pytest.raises(ValueError, match="grayscale"):
+        encode_gray_png(Image.new("RGB", (2, 2)))

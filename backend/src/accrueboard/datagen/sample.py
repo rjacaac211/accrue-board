@@ -35,5 +35,7 @@ def write_samples(out: Path, *, client_id: str = "fernhill", seed: int = 7) -> l
         path.write_bytes(render(record, spec))
         paths.append(path)
         truth.append({"file": name, **record.model_dump(mode="json", exclude={"file"})})
-    (out / "ground_truth.json").write_text(json.dumps(truth, indent=2) + "\n", encoding="utf-8")
+    (out / "ground_truth.json").write_text(
+        json.dumps(truth, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     return paths

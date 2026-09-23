@@ -1,0 +1,36 @@
+# Install once: uvx pre-commit install --hook-type pre-commit --hook-type commit-msg
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  - repo: local
+    hooks:
+      - id: forbidden-terms
+        name: forbidden terms and absolute paths
+        entry: python scripts/check_forbidden_terms.py --require-terms
+        language: system
+        types: [text]
+
+      - id: forbidden-terms-commit-msg
+        name: forbidden terms in commit message
+        entry: python scripts/check_forbidden_terms.py --require-terms --commit-msg
+        language: system
+        stages: [commit-msg]
+
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --project backend ruff format
+        language: system
+        types: [python]
+
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --project backend ruff check --fix
+        language: system
+        types: [python]
+
+      - id: oxlint
+        name: oxlint (frontend)
+        entry: pnpm --dir frontend exec oxlint --deny-warnings
+        language: system
+        files: ^frontend/src/.*\.(ts|tsx)$
+        pass_filenames: false

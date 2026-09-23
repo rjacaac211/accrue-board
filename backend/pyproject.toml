@@ -7,9 +7,13 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.20.0",
     "fastapi>=0.141.1",
+    "pillow>=12.3.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
+    "pypdfium2>=5.13.0",
+    "pyyaml>=6.0.3",
+    "reportlab>=5.0.1",
     "sqlalchemy>=2",
     "uvicorn[standard]>=0.53.0",
 ]
@@ -42,6 +46,10 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "PLR2004", "ARG"]
 "src/accrueboard/db/alembic/**" = ["N999"]
+# Synthetic-data tooling: asserts state generator invariants, randomness is seeded and
+# non-cryptographic by design, and page-drawing functions are long by nature.
+"src/accrueboard/datagen/**" = ["S101", "S311", "PT018", "PLR0912", "PLR0915"]
+"src/accrueboard/cli.py" = ["PLC0415"]  # subcommands import lazily to keep startup fast
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "datetime.datetime.now".msg = "Use accrueboard.clock.Clock so time is injectable."
@@ -106,4 +114,5 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.8",
+    "types-pyyaml>=6.0.12.20260906",
 ]

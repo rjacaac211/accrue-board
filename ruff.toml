@@ -1,0 +1,3 @@
+# Root config so files outside backend/ (e.g. scripts/) use the same settings
+# whether ruff is invoked from the repo root (pre-commit) or from backend/ (CI).
+extend = "backend/pyproject.toml"

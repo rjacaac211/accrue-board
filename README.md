@@ -9,9 +9,12 @@ it has been sitting there, and a full audit trail of what happened and why. Revi
 flow back into a per-client knowledge store, so the next similar document is coded with more
 confidence.
 
-> **Status:** early development. The domain core (money, validation, double-entry posting,
-> duplicate and outlier detection, routing, task lifecycle and bottleneck rules) is built and
-> tested. The pipeline, UI and evaluation are in progress; unbuilt parts are marked as planned.
+> **Status:** early development. Built and tested so far:
+> - the domain core: money, validation, double-entry posting, duplicate and outlier detection,
+>   routing, the task lifecycle and bottleneck rules
+> - the synthetic-data generator
+>
+> The pipeline, UI and evaluation are in progress; unbuilt parts are marked as planned.
 
 ## How it works
 
@@ -39,6 +42,19 @@ intake → classify → extract → validate → code → score → route ─┬
 
   *(planned)*
 
+## Data
+
+The system is evaluated on a deterministic synthetic dataset for a fictional US online
+retailer:
+- 12 months of coded history
+- validation and test splits of rendered PDF invoices, receipts (some as noisy PNG scans),
+  credit notes, statements and quotes
+- seeded anomalies and hard negatives, each defined objectively
+
+Every document is generated from ground truth first, so extraction, coding and anomaly
+detection are scored exactly. See [docs/synthetic-data.md](docs/synthetic-data.md) and the
+examples in [`data/sample/`](data/sample/).
+
 ## Stack
 
 - **Backend:** Python 3.13, FastAPI, SQLAlchemy, Alembic
@@ -65,6 +81,7 @@ docker compose up -d db                   # Postgres on localhost:5433
 cd backend
 uv sync
 uv run poe migrate                        # apply database migrations
+uv run accrueboard datagen                # generate the synthetic dataset into data/generated
 uv run poe dev                            # API on http://localhost:8000
 
 cd ../frontend

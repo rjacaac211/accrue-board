@@ -1,0 +1,520 @@
+# Synthetic client: a small US online retailer of home and lifestyle goods.
+# All names, addresses and numbers are fictional.
+
+id: fernhill
+name: Fernhill Home Goods LLC
+business: Online retailer of home and lifestyle goods
+address: ["2100 Cedar Bend Dr, Suite 140", "Austin, TX 78758"]
+materiality_cap: "10000.00"
+capitalization_threshold: "2500.00"
+
+periods:
+  history: {start: 2024-12-01, end: 2025-11-30}
+  validation: {start: 2025-12-01, end: 2026-02-28}
+  test: {start: 2026-03-01, end: 2026-08-31}
+
+tax_rates:
+  TX: "0.0825"
+  CA: "0.0725"
+  NY: "0.08875"
+  WA: "0.1025"
+  NC: "0.0700"
+  GA: "0.0700"
+  OR: "0"
+  IL: "0.1025"
+  CO: "0.0290"
+  TN: "0.0975"
+  NJ: "0.06625"
+  AZ: "0.0860"
+
+accounts:
+  - {code: "1000", name: Operating Bank, type: asset}
+  - {code: "1300", name: Inventory, type: asset, description: Finished goods purchased for resale}
+  - {code: "1400", name: Prepaid Expenses, type: asset, description: Annual plans and insurance paid in advance}
+  - {code: "1500", name: Equipment (Fixed Assets), type: asset, description: Equipment items over the capitalization threshold}
+  - {code: "2000", name: Accounts Payable, type: liability}
+  - {code: "2100", name: Credit Card Clearing, type: liability}
+  - {code: "2200", name: Sales Tax Payable, type: liability}
+  - {code: "3000", name: Owner's Equity, type: equity}
+  - {code: "4000", name: Sales Revenue, type: revenue}
+  - {code: "5000", name: Cost of Goods Sold, type: expense}
+  - {code: "5100", name: Freight In, type: expense, description: Inbound freight on inventory purchases}
+  - {code: "5200", name: Outbound Shipping, type: expense, description: Postage and carrier charges for customer orders}
+  - {code: "5300", name: Packaging Supplies, type: expense, description: Boxes, mailers, tape, tissue and inserts}
+  - {code: "5400", name: Merchant & Platform Fees, type: expense, description: Storefront platform and payment processing}
+  - {code: "6000", name: Advertising & Marketing, type: expense}
+  - {code: "6050", name: Product Photography, type: expense}
+  - {code: "6100", name: Office Supplies, type: expense}
+  - {code: "6150", name: Small Equipment, type: expense, capitalizable: true, description: Computers, printers, scanners and fixtures}
+  - {code: "6200", name: Software & Subscriptions, type: expense}
+  - {code: "6300", name: Rent, type: expense}
+  - {code: "6350", name: Utilities, type: expense}
+  - {code: "6400", name: Contractors & Freelancers, type: expense}
+  - {code: "6450", name: Professional Fees, type: expense, description: Accounting and legal services}
+  - {code: "6500", name: Travel, type: expense}
+  - {code: "6550", name: Meals, type: expense}
+  - {code: "6600", name: Insurance, type: expense}
+  - {code: "6700", name: Repairs & Maintenance, type: expense}
+  - {code: "6800", name: Telephone & Internet, type: expense}
+  - {code: "6900", name: Bank Charges, type: expense}
+
+roles:
+  accounts_payable: "2000"
+  card_clearing: "2100"
+  bank: "1000"
+  inventory: "1300"
+  fixed_assets: "1500"
+
+vendors:
+  # ---------------------------------------------------------------- inventory suppliers
+  - id: oakridge
+    name: Oakridge Textiles Inc.
+    address: ["480 Mill Race Rd", "Burlington, NC 27215"]
+    state: NC
+    layout: classic
+    number_format: "INV-{n:05d}"
+    schedule: {every_days: 17, jitter_days: 4}
+    terms_days: 30
+    lines: [1, 4]
+    shipping: {prob: 0.5, min: "18.00", max: "65.00"}
+    discount: {prob: 0.15, pct_min: 2, pct_max: 5}
+    credit_note_prob: 0.07
+    seasonal: true
+    catalog:
+      - {description: Linen throw blanket - natural, account: "1300", price: ["18.50", "21.00"], qty: [10, 50]}
+      - {description: Waffle weave bath towel set, account: "1300", price: ["14.00", "16.50"], qty: [12, 60]}
+      - {description: Stonewashed cotton napkins (set of 4), account: "1300", price: ["7.25", "8.40"], qty: [20, 80]}
+      - {description: Chunky knit cushion cover 18in, account: "1300", price: ["9.80", "11.20"], qty: [12, 48]}
+
+  - id: meadowbrook
+    name: Meadowbrook Ceramics Co.
+    address: ["77 Kiln St", "Asheville, NC 28801"]
+    state: NC
+    layout: modern
+    number_format: "MB{n:06d}"
+    schedule: {every_days: 21, jitter_days: 5}
+    terms_days: 30
+    lines: [1, 3]
+    shipping: {prob: 0.7, min: "25.00", max: "90.00"}
+    credit_note_prob: 0.1
+    seasonal: true
+    catalog:
+      - {description: Speckled stoneware mug 12oz, account: "1300", price: ["5.60", "6.40"], qty: [24, 120]}
+      - {description: Matte dinner plate 10.5in, account: "1300", price: ["7.90", "9.10"], qty: [24, 96]}
+      - {description: Serving bowl - sand glaze, account: "1300", price: ["14.20", "16.00"], qty: [6, 36]}
+
+  - id: copperleaf
+    name: Copperleaf Candle Company
+    address: ["1502 Harbor Ave SW", "Seattle, WA 98126"]
+    state: WA
+    layout: boxed
+    number_format: "{n}"
+    schedule: {every_days: 14, jitter_days: 3}
+    terms_days: 15
+    lines: [1, 3]
+    shipping: {prob: 0.8, min: "12.00", max: "40.00"}
+    credit_note_prob: 0.05
+    seasonal: true
+    catalog:
+      - {description: Soy candle 8oz - cedar & smoke, account: "1300", price: ["6.10", "6.90"], qty: [24, 96]}
+      - {description: Soy candle 8oz - fig & vetiver, account: "1300", price: ["6.10", "6.90"], qty: [24, 96]}
+      - {description: Reed diffuser 100ml, account: "1300", price: ["8.30", "9.50"], qty: [12, 48]}
+
+  - id: silverline
+    name: Silverline Glassworks LLC
+    address: ["9 Foundry Ln", "Toledo, OH 43604"]
+    state: CO
+    layout: ledger
+    number_format: "SG-{n:04d}"
+    schedule: {every_days: 28, jitter_days: 6}
+    terms_days: 45
+    lines: [1, 3]
+    shipping: {prob: 0.9, min: "35.00", max: "120.00"}
+    credit_note_prob: 0.12
+    seasonal: true
+    catalog:
+      - {description: Ribbed glass tumbler (set of 4), account: "1300", price: ["11.40", "12.80"], qty: [12, 72]}
+      - {description: Hand-blown bud vase, account: "1300", price: ["8.75", "10.20"], qty: [12, 48]}
+      - {description: Recycled glass carafe 1L, account: "1300", price: ["12.10", "13.60"], qty: [6, 36]}
+
+  - id: bramble
+    name: Bramble & Birch Wholesale
+    address: ["3310 Industrial Pkwy", "Portland, OR 97217"]
+    state: OR
+    layout: minimal
+    number_format: "BB-{n:05d}"
+    schedule: {every_days: 24, jitter_days: 5}
+    terms_days: 30
+    lines: [2, 4]
+    shipping: {prob: 0.6, min: "20.00", max: "75.00"}
+    discount: {prob: 0.2, pct_min: 3, pct_max: 8}
+    credit_note_prob: 0.06
+    seasonal: true
+    catalog:
+      - {description: Acacia wood serving board, account: "1300", price: ["13.00", "15.40"], qty: [6, 36]}
+      - {description: Woven seagrass basket - medium, account: "1300", price: ["10.20", "12.00"], qty: [8, 40]}
+      - {description: Beeswax food wrap 3-pack, account: "1300", price: ["4.10", "4.80"], qty: [24, 120]}
+      - {description: Olive wood salad servers, account: "1300", price: ["6.50", "7.40"], qty: [12, 48]}
+
+  # ---------------------------------------------------------------- freight and packaging
+  - id: harborline
+    name: Harborline Freight Services
+    address: ["600 Terminal Blvd", "Dallas, TX 75207"]
+    state: TX
+    layout: compact
+    number_format: "HF{n:07d}"
+    schedule: {every_days: 16, jitter_days: 5}
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: LTL freight - inbound pallet, account: "5100", price: ["145.00", "320.00"], qty: [1, 3]}
+      - {description: Liftgate delivery surcharge, account: "5100", price: ["45.00", "45.00"], qty: [1, 1]}
+
+  - id: boxcraft
+    name: Boxcraft Packaging Supply
+    address: ["2455 Commerce St", "Grand Prairie, TX 75050"]
+    state: TX
+    layout: classic
+    number_format: "BX-{n:05d}"
+    schedule: {every_days: 14, jitter_days: 3}
+    terms_days: 30
+    lines: [1, 4]
+    shipping: {prob: 0.3, min: "15.00", max: "35.00"}
+    catalog:
+      - {description: Corrugated shipping box 12x10x6 (bundle of 25), account: "5300", price: ["21.00", "24.50"], qty: [2, 12]}
+      - {description: Kraft padded mailer 10x13 (case of 100), account: "5300", price: ["38.00", "42.00"], qty: [1, 5]}
+      - {description: Packing tape 2in x 110yd (6 rolls), account: "5300", price: ["16.80", "18.90"], qty: [1, 6]}
+      - {description: Tissue paper - ivory (ream), account: "5300", price: ["19.50", "22.00"], qty: [1, 4]}
+
+  - id: parcelwise
+    name: Parcelwise Shipping
+    address: ["PO Box 8820", "Memphis, TN 38101"]
+    state: TN
+    layout: modern
+    number_format: "PW-{n:08d}"
+    schedule: {every_days: 7, jitter_days: 1}
+    terms_days: 7
+    lines: [1, 2]
+    catalog:
+      - {description: Ground shipping - weekly consolidated, account: "5200", price: ["380.00", "760.00"], qty: [1, 1]}
+      - {description: Residential delivery surcharge, account: "5200", price: ["28.00", "64.00"], qty: [1, 1]}
+
+  - id: swiftlane
+    name: Swiftlane Couriers
+    address: ["1188 Airport Commerce Dr", "Austin, TX 78741"]
+    state: TX
+    layout: compact
+    number_format: "SL{n:05d}"
+    schedule: {every_days: 14, jitter_days: 2}
+    terms_days: 14
+    lines: [1, 1]
+    catalog:
+      - {description: Same-day local deliveries, account: "5200", price: ["95.00", "210.00"], qty: [1, 1]}
+
+  - id: bulkbarn
+    name: BulkBarn Marketplace
+    address: ["500 Warehouse Way", "Phoenix, AZ 85043"]
+    state: AZ
+    layout: minimal
+    number_format: "BBM-{n:06d}"
+    schedule: {every_days: 22, jitter_days: 7}
+    terms_days: 0
+    lines: [1, 3]
+    shipping: {prob: 0.4, min: "9.99", max: "29.99"}
+    catalog:
+      - {description: Poly mailer 14.5x19 (pack of 200), account: "5300", price: ["34.00", "39.00"], qty: [1, 3], taxable: true}
+      - {description: Thermal shipping labels 4x6 (roll of 500), account: "5300", price: ["14.00", "17.00"], qty: [2, 8], taxable: true}
+      - {description: Wire shelving unit 72in, account: "6150", price: ["129.00", "159.00"], qty: [1, 2], taxable: true}
+      - {description: Digital postage scale, account: "6150", price: ["38.00", "46.00"], qty: [1, 1], taxable: true}
+
+  # ---------------------------------------------------------------- platform, software, subscriptions
+  - id: cloudcart
+    name: Cloudcart Commerce
+    address: ["44 Montgomery St, Floor 9", "San Francisco, CA 94104"]
+    state: CA
+    layout: modern
+    number_format: "CC-{n:07d}"
+    schedule: {monthly_day: 1}
+    terms_days: 0
+    lines: [1, 2]
+    catalog:
+      - {description: Storefront plan - Growth (monthly), account: "5400", price: ["79.00", "79.00"], qty: [1, 1], fixed: true, always: true}
+      - {description: Transaction fees - payment processing, account: "5400", price: ["410.00", "980.00"], qty: [1, 1]}
+
+  - id: stackpoint
+    name: Stackpoint Email
+    address: ["210 Broadway", "New York, NY 10038"]
+    state: NY
+    layout: minimal
+    number_format: "SP{n:06d}"
+    schedule: {monthly_day: 3}
+    terms_days: 0
+    lines: [1, 1]
+    catalog:
+      - {description: Email marketing plan - 10k contacts, account: "6200", price: ["110.00", "110.00"], qty: [1, 1], fixed: true}
+
+  - id: brightdesk
+    name: Brightdesk Support Software
+    address: ["1700 Blake St", "Denver, CO 80202"]
+    state: CO
+    layout: boxed
+    number_format: "BD-{n:05d}"
+    schedule: {monthly_day: 12}
+    terms_days: 0
+    lines: [1, 1]
+    catalog:
+      - {description: Help desk seats x3 (monthly), account: "6200", price: ["57.00", "57.00"], qty: [1, 1], fixed: true}
+
+  - id: ledgerbook
+    name: Ledgerbook Cloud Accounting
+    address: ["88 Pine St", "New York, NY 10005"]
+    state: NY
+    layout: classic
+    number_format: "LB-{n:06d}"
+    schedule: {monthly_day: 20}
+    terms_days: 0
+    lines: [1, 1]
+    catalog:
+      - {description: Accounting software - Plus plan, account: "6200", price: ["49.00", "49.00"], qty: [1, 1], fixed: true}
+
+  # ---------------------------------------------------------------- marketing and creative
+  - id: pixelreach
+    name: Pixelreach Ads
+    address: ["350 Mission St", "San Francisco, CA 94105"]
+    state: CA
+    layout: modern
+    number_format: "PX{n:08d}"
+    schedule: {monthly_day: 2}
+    terms_days: 0
+    lines: [1, 1]
+    seasonal: true
+    catalog:
+      - {description: Search and display ads - monthly spend, account: "6000", price: ["900.00", "1600.00"], qty: [1, 1]}
+
+  - id: socialspark
+    name: Socialspark Media
+    address: ["1400 N Lamar Blvd", "Austin, TX 78703"]
+    state: TX
+    layout: ledger
+    number_format: "SSM-{n:04d}"
+    schedule: {every_days: 15, jitter_days: 3}
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: Influencer campaign - content package, account: "6000", price: ["350.00", "700.00"], qty: [1, 1]}
+      - {description: Social media management retainer, account: "6000", price: ["400.00", "400.00"], qty: [1, 1]}
+
+  - id: kiratanaka
+    name: Kira Tanaka Design
+    address: ["3905 Avenue D", "Austin, TX 78751"]
+    state: TX
+    layout: minimal
+    number_format: "KT-{n:03d}"
+    schedule: {every_days: 16, jitter_days: 4}
+    terms_days: 14
+    lines: [1, 2]
+    catalog:
+      - {description: Graphic design - product listing templates (hours), account: "6400", price: ["85.00", "85.00"], qty: [4, 14]}
+      - {description: Packaging insert design revision (hours), account: "6400", price: ["85.00", "85.00"], qty: [1, 5]}
+
+  - id: lumenstudio
+    name: Lumen Studio Photography
+    address: ["2701 E Cesar Chavez St", "Austin, TX 78702"]
+    state: TX
+    layout: boxed
+    number_format: "LS{n:04d}"
+    schedule: {every_days: 30, jitter_days: 6}
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: Product photography - half-day session, account: "6050", price: ["650.00", "650.00"], qty: [1, 1]}
+      - {description: Photo retouching (per image), account: "6050", price: ["9.00", "12.00"], qty: [10, 60]}
+
+  # ---------------------------------------------------------------- premises and overhead
+  - id: riverside
+    name: Riverside Commercial Properties
+    address: ["901 S Mopac Expy, Bldg 2", "Austin, TX 78746"]
+    state: TX
+    layout: ledger
+    number_format: "RCP-{n:05d}"
+    schedule: {monthly_day: 25}
+    terms_days: 7
+    lines: [1, 1]
+    catalog:
+      - {description: Warehouse and office rent - Suite 140, account: "6300", price: ["3400.00", "3400.00"], qty: [1, 1], fixed: true}
+
+  - id: metropower
+    name: Metro Power & Light
+    address: ["721 Barton Springs Rd", "Austin, TX 78704"]
+    state: TX
+    layout: compact
+    number_format: "{n:010d}"
+    schedule: {monthly_day: 8}
+    terms_days: 21
+    lines: [1, 1]
+    catalog:
+      - {description: Electric service - commercial, account: "6350", price: ["210.00", "390.00"], qty: [1, 1]}
+
+  - id: fiberlink
+    name: Fiberlink Business Internet
+    address: ["5000 Plaza on the Lake", "Austin, TX 78746"]
+    state: TX
+    layout: classic
+    number_format: "FL-{n:07d}"
+    schedule: {monthly_day: 15}
+    terms_days: 14
+    lines: [1, 1]
+    catalog:
+      - {description: Business fiber 500 Mbps + static IP, account: "6800", price: ["129.00", "129.00"], qty: [1, 1], fixed: true}
+
+  - id: fixright
+    name: FixRight Facilities
+    address: ["8200 N Lamar Blvd", "Austin, TX 78753"]
+    state: TX
+    layout: compact
+    number_format: "FR{n:05d}"
+    schedule: {every_days: 55, jitter_days: 15}
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: HVAC service call, account: "6700", price: ["145.00", "260.00"], qty: [1, 1]}
+      - {description: Replacement parts and materials, account: "6700", price: ["40.00", "180.00"], qty: [1, 1], taxable: true}
+
+  - id: halecarver
+    name: Hale & Carver CPAs
+    address: ["106 E 6th St, Suite 900", "Austin, TX 78701"]
+    state: TX
+    layout: classic
+    number_format: "{n:05d}"
+    schedule: {every_days: 91, jitter_days: 5}
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: Quarterly bookkeeping review, account: "6450", price: ["850.00", "850.00"], qty: [1, 1]}
+      - {description: Sales tax filing assistance, account: "6450", price: ["225.00", "225.00"], qty: [1, 1]}
+
+  # ---------------------------------------------------------------- card receipts
+  - id: staplewise
+    name: Staplewise Office Supply
+    address: ["10225 Research Blvd", "Austin, TX 78759"]
+    state: TX
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "{n:06d}"
+    schedule: {every_days: 11, jitter_days: 4}
+    lines: [1, 4]
+    catalog:
+      - {description: Copy paper letter (case), account: "6100", price: ["42.99", "46.99"], qty: [1, 2], taxable: true}
+      - {description: Black ink cartridge 2-pack, account: "6100", price: ["38.99", "44.99"], qty: [1, 2], taxable: true}
+      - {description: Shipping label pads, account: "6100", price: ["12.49", "14.99"], qty: [1, 3], taxable: true}
+      - {description: Permanent markers 12-pack, account: "6100", price: ["9.99", "11.49"], qty: [1, 2], taxable: true}
+      - {description: Desk organizer, account: "6100", price: ["19.99", "24.99"], qty: [1, 1], taxable: true}
+
+  - id: tekmart
+    name: Tekmart Business Electronics
+    address: ["9600 N Mopac Expy", "Austin, TX 78759"]
+    state: TX
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "TM{n:07d}"
+    schedule: {every_days: 38, jitter_days: 10}
+    lines: [1, 2]
+    credit_note_prob: 0.0
+    catalog:
+      - {description: USB-C docking station, account: "6150", price: ["129.99", "179.99"], qty: [1, 2], taxable: true}
+      - {description: Thermal label printer, account: "6150", price: ["219.99", "279.99"], qty: [1, 1], taxable: true}
+      - {description: 27in monitor, account: "6150", price: ["249.99", "329.99"], qty: [1, 2], taxable: true}
+      - {description: HDMI cables 3-pack, account: "6100", price: ["18.99", "24.99"], qty: [1, 2], taxable: true}
+      - {description: Workstation laptop 16in, account: "6150", price: ["2649.00", "3199.00"], qty: [1, 1], taxable: true, rare: true}
+
+  - id: cornerbistro
+    name: Corner Bistro
+    address: ["312 Congress Ave", "Austin, TX 78701"]
+    state: TX
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "{n:05d}"
+    schedule: {every_days: 16, jitter_days: 6}
+    lines: [1, 3]
+    catalog:
+      - {description: Lunch - team meeting, account: "6550", price: ["42.00", "96.00"], qty: [1, 1], taxable: true}
+      - {description: Coffee and pastries, account: "6550", price: ["14.50", "31.00"], qty: [1, 1], taxable: true}
+
+  - id: skyway
+    name: Skyway Airlines
+    address: ["2500 Aviation Way", "Dallas, TX 75261"]
+    state: TX
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "0{n:012d}"
+    schedule: {every_days: 60, jitter_days: 20}
+    lines: [1, 1]
+    catalog:
+      - {description: Airfare AUS-SEA round trip (trade show), account: "6500", price: ["289.00", "541.00"], qty: [1, 1]}
+
+  - id: lakeside
+    name: Lakeside Inn & Suites
+    address: ["1900 Alaskan Way", "Seattle, WA 98101"]
+    state: WA
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "F{n:06d}"
+    schedule: {every_days: 60, jitter_days: 20}
+    lines: [1, 1]
+    catalog:
+      - {description: Hotel stay - 2 nights, account: "6500", price: ["318.00", "486.00"], qty: [1, 1]}
+
+  - id: shieldmark
+    name: Shieldmark Business Insurance
+    address: ["1 Liberty Plaza", "Hartford, CT 06103"]
+    state: OR
+    layout: boxed
+    number_format: "POL-{n:06d}"
+    schedule: {every_days: 91, jitter_days: 3}
+    terms_days: 30
+    lines: [1, 1]
+    catalog:
+      - {description: General liability and inventory coverage - quarterly premium, account: "6600", price: ["612.00", "612.00"], qty: [1, 1], fixed: true}
+
+# Vendors that never appear in history; used for first-time-vendor anomalies.
+new_vendors:
+  - id: evergreen
+    name: Evergreen Display Fixtures
+    address: ["14 Showroom Ct", "Dallas, TX 75247"]
+    state: TX
+    layout: modern
+    number_format: "EDF-{n:04d}"
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: Pop-up market display shelving, account: "6150", price: ["340.00", "520.00"], qty: [1, 2], taxable: true}
+      - {description: Table riser set - pine, account: "6150", price: ["88.00", "120.00"], qty: [1, 3], taxable: true}
+
+  - id: brightpath
+    name: Brightpath Trade Show Services
+    address: ["600 Convention Center Dr", "Seattle, WA 98101"]
+    state: WA
+    layout: ledger
+    number_format: "BTS{n:05d}"
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: Booth space - spring gift market, account: "6000", price: ["1450.00", "1950.00"], qty: [1, 1]}
+      - {description: Booth electrical hookup, account: "6000", price: ["185.00", "185.00"], qty: [1, 1]}
+
+  - id: northstar
+    name: Northstar Label Co.
+    address: ["75 Printworks Ave", "Nashville, TN 37203"]
+    state: TN
+    layout: classic
+    number_format: "NL-{n:05d}"
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: "Custom printed product labels (1000 ct)", account: "5300", price: ["145.00", "210.00"], qty: [1, 4]}
+      - {description: Care card inserts (500), account: "5300", price: ["62.00", "85.00"], qty: [1, 3]}

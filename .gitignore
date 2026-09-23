@@ -19,7 +19,7 @@ dist-ssr/
 .vite/
 
 # Data and outputs (regenerable from the seeded generator)
-/data/
+/data/*
 !/data/sample/
 
 # Local environment and secrets

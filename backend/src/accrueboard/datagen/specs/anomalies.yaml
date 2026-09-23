@@ -1,0 +1,104 @@
+# Seeded anomalies and hard negatives for the evaluation splits.
+#
+# Each anomaly is defined by an objective property of the generated data, not by what a
+# detector happens to flag. `expected_rule` names the routing rule that *should* catch it;
+# the evaluation reports how often it actually does (recall) and how often rules fire on
+# documents that are not anomalous (precision, hard-negative false positives).
+#
+# `counts` are per split. History (the knowledge-store seed) never contains anomalies.
+
+anomalies:
+  - id: exact_file_duplicate
+    expected_rule: duplicate_file
+    definition: The same file bytes as an earlier document in the same split, submitted again.
+    counts: {validation: 3, test: 5}
+
+  - id: renumbered_duplicate
+    expected_rule: duplicate_number
+    definition: >-
+      An earlier bill from the same vendor re-sent with identical amounts, re-rendered in a
+      different layout and with the document number formatted differently (e.g. INV-00123 vs 123).
+    counts: {validation: 3, test: 6}
+
+  - id: near_duplicate
+    expected_rule: near_duplicate
+    definition: >-
+      An earlier bill re-issued by the vendor with a new document number, the same total and
+      an issue date 3 to 9 days later.
+    counts: {validation: 3, test: 5}
+
+  - id: amount_outlier
+    expected_rule: amount_outlier
+    definition: >-
+      A bill whose total is at least 8x the median total of that vendor's documents in
+      history, for a vendor with at least 5 history documents. Injected cases are 8x to 15x;
+      any naturally generated bill meeting the definition is labelled too.
+    counts: {validation: 3, test: 6}
+
+  - id: arithmetic_error
+    expected_rule: validation_failed
+    definition: >-
+      The vendor's own document does not add up: one line amount differs from quantity x
+      unit price, or the printed total differs from subtotal - discount + shipping + tax.
+    counts: {validation: 3, test: 6}
+
+  - id: tax_on_resale_inventory
+    expected_rule: tax_on_resale_inventory
+    definition: >-
+      An inventory supplier's invoice that charges sales tax on stock bought for resale
+      (inventory lines marked taxable with tax > 0).
+    counts: {validation: 2, test: 4}
+
+  - id: over_materiality
+    expected_rule: over_materiality
+    definition: A legitimate bill whose total exceeds the client's review cap ($10,000).
+    counts: {validation: 2, test: 4}
+
+  - id: duplicate_credit_note
+    expected_rule: duplicate_credit_note
+    definition: >-
+      A second credit note from the same vendor, with a new credit note number, against an
+      invoice that already has a credit note.
+    counts: {validation: 2, test: 3}
+
+  - id: first_time_vendor
+    expected_rule: first_time_vendor
+    definition: A bill from a vendor that never appears in the client's history.
+    counts: {validation: 2, test: 4}
+
+  - id: unsupported_document
+    expected_rule: unsupported_type
+    definition: >-
+      A document that is not a bill (a statement of account or a quotation) and must not be
+      posted.
+    counts: {validation: 2, test: 4}
+
+hard_negatives:
+  - id: split_shipment
+    must_not_fire: [duplicate_number, near_duplicate]
+    definition: >-
+      Two invoices from the same vendor for the same purchase order, with different
+      document numbers and different totals, issued within 3 days of each other.
+    counts: {validation: 2, test: 4}
+
+  - id: same_number_other_vendor
+    must_not_fire: [duplicate_number]
+    definition: A bill whose document number matches an earlier bill from a different vendor.
+    counts: {validation: 2, test: 4}
+
+  - id: seasonal_restock
+    must_not_fire: [amount_outlier]
+    definition: >-
+      A legitimate larger inventory order, 1.5x to 2.5x that vendor's history median total.
+    counts: {validation: 2, test: 4}
+
+  # Labelled automatically wherever they occur naturally in the evaluation splits:
+  - id: recurring_charge
+    must_not_fire: [duplicate_number, near_duplicate, amount_outlier]
+    definition: A fixed-price subscription or rent bill that repeats every month.
+    counts: natural
+
+  - id: credit_note_for_invoice
+    must_not_fire: [duplicate_number, duplicate_credit_note]
+    definition: The first credit note referring to an earlier invoice from the same vendor.
+    counts: natural

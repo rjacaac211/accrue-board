@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     data_dir: Path = Path(__file__).resolve().parents[3] / "data"
     """Generated datasets and samples. Defaults to ``data/`` at the repository root."""
 
+    # Models per pipeline step (see docs/adr/0001). Override via environment variables.
+    model_classify: str = "claude-haiku-4-5"
+    model_extract: str = "claude-sonnet-5"
+    model_verify: str = "claude-sonnet-5"
+    model_code: str = "claude-sonnet-5"
+    llm_mode: str = "auto"
+    """Record/replay mode: live, record, replay or auto (see accrueboard.llm.client)."""
+    recordings_dir: Path = Path(__file__).resolve().parents[3] / "data" / "recordings"
+
 
 @lru_cache
 def get_settings() -> Settings:

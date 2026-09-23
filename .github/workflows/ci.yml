@@ -50,7 +50,7 @@ jobs:
       DATABASE_URL: postgresql+psycopg://accrue:accrue@localhost:5432/accrueboard
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
       - run: uv sync --frozen

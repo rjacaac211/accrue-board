@@ -9,8 +9,9 @@ it has been sitting there, and a full audit trail of what happened and why. Revi
 flow back into a per-client knowledge store, so the next similar document is coded with more
 confidence.
 
-> **Status:** early development. Scaffold only (milestone M0). The sections below describe the
-> intended system; anything not yet built is marked as planned.
+> **Status:** early development. The domain core (money, validation, double-entry posting,
+> duplicate and outlier detection, routing, task lifecycle and bottleneck rules) is built and
+> tested. The pipeline, UI and evaluation are in progress; unbuilt parts are marked as planned.
 
 ## How it works
 

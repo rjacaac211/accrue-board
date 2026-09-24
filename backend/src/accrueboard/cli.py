@@ -3,6 +3,7 @@
 import argparse
 import time
 from pathlib import Path
+from typing import Any
 
 from accrueboard import __version__
 from accrueboard.config import get_settings
@@ -60,6 +61,73 @@ def _seed(args: argparse.Namespace) -> int:
     return 0
 
 
+def _processor() -> "Any":
+    from accrueboard.clock import SystemClock
+    from accrueboard.db.session import get_sessionmaker
+    from accrueboard.llm.factory import build_llm
+    from accrueboard.pipeline.process import PipelineModels, Processor
+    from accrueboard.retrieval.embeddings import FastEmbedder
+
+    settings = get_settings()
+    models = PipelineModels(
+        classify=settings.model_classify,
+        extract=settings.model_extract,
+        verify=settings.model_verify,
+        code=settings.model_code,
+    )
+    embedder = FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
+    return Processor(get_sessionmaker(), build_llm(settings), models, embedder, SystemClock())
+
+
+def _ingest(args: argparse.Namespace) -> int:
+    from accrueboard.clock import SystemClock
+    from accrueboard.db.session import get_sessionmaker
+    from accrueboard.pipeline.files import SourceFile
+    from accrueboard.pipeline.process import ingest
+
+    now = SystemClock().now()
+    with get_sessionmaker()() as session, session.begin():
+        for name in args.files:
+            task = ingest(session, args.client, SourceFile.from_path(Path(name)), received_at=now)
+            print(f"queued {name} as {task.id}")
+    return 0
+
+
+def _ingest_dataset(args: argparse.Namespace) -> int:
+    from accrueboard.datagen.spec import Split
+    from accrueboard.datagen.writer import read_records
+    from accrueboard.db.session import get_sessionmaker
+    from accrueboard.pipeline.files import SourceFile
+    from accrueboard.pipeline.process import ingest
+
+    dataset = get_settings().data_dir / "generated" / args.client
+    records = read_records(dataset, Split(args.split))[: args.limit]
+    with get_sessionmaker()() as session, session.begin():
+        for record in records:
+            if record.file is None:
+                continue
+            source = SourceFile.from_path(dataset / record.file)
+            ingest(session, args.client, source, received_at=record.received_at)
+    print(f"queued {len(records)} {args.split} documents for {args.client}")
+    return 0
+
+
+def _worker(args: argparse.Namespace) -> int:
+    import logging
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    processor = _processor()
+    while True:
+        processor.requeue_expired()
+        outcome = processor.run_once(args.client)
+        if outcome is not None:
+            print(f"{outcome.task_id}: {outcome.state.value} - {outcome.summary}")
+            continue
+        if args.drain:
+            return 0
+        time.sleep(args.poll)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="accrueboard", description=__doc__)
     parser.add_argument("--version", action="version", version=f"accrueboard {__version__}")
@@ -88,6 +156,25 @@ def main(argv: list[str] | None = None) -> int:
         help="fast = local ONNX model (default); hashing = dependency-free, for tests",
     )
     seed.set_defaults(handler=_seed)
+
+    ingest_cmd = commands.add_parser("ingest", help="queue document files for processing")
+    ingest_cmd.add_argument("files", nargs="+")
+    ingest_cmd.add_argument("--client", default="fernhill")
+    ingest_cmd.set_defaults(handler=_ingest)
+
+    dataset_cmd = commands.add_parser(
+        "ingest-dataset", help="queue generated documents in arrival order (demo and evaluation)"
+    )
+    dataset_cmd.add_argument("--client", default="fernhill")
+    dataset_cmd.add_argument("--split", choices=["validation", "test"], default="validation")
+    dataset_cmd.add_argument("--limit", type=int)
+    dataset_cmd.set_defaults(handler=_ingest_dataset)
+
+    worker = commands.add_parser("worker", help="process queued tasks")
+    worker.add_argument("--client", help="only this client's tasks")
+    worker.add_argument("--drain", action="store_true", help="exit when the queue is empty")
+    worker.add_argument("--poll", type=float, default=2.0, help="seconds between queue checks")
+    worker.set_defaults(handler=_worker)
 
     args = parser.parse_args(argv)
     if not hasattr(args, "handler"):

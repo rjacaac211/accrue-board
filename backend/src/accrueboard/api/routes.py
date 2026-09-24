@@ -310,7 +310,13 @@ def feed(
         if name in seen:
             continue
         source = SourceFile.from_path(dataset / record.file)
-        queued.append(ingest(session, client_id, source, received_at=clock.now()).id)
+        # The document keeps its arrival time from the dataset, so date checks (issue date not
+        # in the future, not stale) judge it as of when it arrived, whenever the demo runs. The
+        # task joins the queue now, so its age on the board starts now.
+        task = ingest(
+            session, client_id, source, received_at=record.received_at, queued_at=clock.now()
+        )
+        queued.append(task.id)
         if len(queued) >= body.count:
             break
     session.commit()

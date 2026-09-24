@@ -1,0 +1,49 @@
+name: Evaluation replay
+
+# Re-runs the end-to-end evaluation from the committed model recordings (no API key) and fails
+# if any reported number differs from data/results/end-to-end.json. It takes about half an hour,
+# so it runs on demand, weekly, and when code that feeds the numbers changes on main.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "backend/src/accrueboard/**"
+      - "data/results/**"
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    name: Replay the end-to-end evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: accrue
+          POSTGRES_PASSWORD: accrue
+          POSTGRES_DB: accrueboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U accrue -d accrueboard"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      DATABASE_URL: postgresql+psycopg://accrue:accrue@localhost:5432/accrueboard
+      LLM_MODE: replay
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run accrueboard eval end-to-end --replay

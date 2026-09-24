@@ -82,3 +82,51 @@ jobs:
       - run: pnpm run typecheck
       - run: pnpm run test
       - run: pnpm run build
+
+  e2e:
+    name: Browser smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: accrue
+          POSTGRES_PASSWORD: accrue
+          POSTGRES_DB: accrueboard
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U accrue -d accrueboard"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      DATABASE_URL: postgresql+psycopg://accrue:accrue@localhost:5432/accrueboard
+      E2E_DATABASE_URL: postgresql+psycopg://accrue:accrue@localhost:5432/accrueboard_e2e_ui
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: uv sync --frozen
+        working-directory: backend
+      - run: pnpm install --frozen-lockfile && pnpm run build
+        working-directory: frontend
+      - run: pnpm exec playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Generate the synthetic dataset
+        run: uv run accrueboard datagen
+        working-directory: backend
+      - name: Run the stack (offline model) and the browser test
+        run: python scripts/run_e2e.py
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-results
+          path: frontend/e2e-results/

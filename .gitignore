@@ -21,6 +21,7 @@ dist-ssr/
 # Data and outputs (regenerable from the seeded generator)
 /data/*
 !/data/sample/
+!/data/results/
 
 # Local environment and secrets
 .env
@@ -41,3 +42,7 @@ Thumbs.db
 
 # Local browser-automation output
 .playwright-mcp/
+
+# Playwright output
+/frontend/e2e-results/
+/frontend/playwright-report/

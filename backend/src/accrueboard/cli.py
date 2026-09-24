@@ -61,13 +61,22 @@ def _seed(args: argparse.Namespace) -> int:
     return 0
 
 
+def _bootstrap(args: argparse.Namespace) -> int:
+    """Make a fresh installation demo-ready: generate the dataset and seed the client, each
+    only if missing (safe to run on every start)."""
+    settings = get_settings()
+    if not (settings.data_dir / "generated" / args.client / "validation.jsonl").is_file():
+        _datagen(argparse.Namespace(client=args.client, seed=args.seed, out=None, no_render=False))
+    return _seed(argparse.Namespace(client=args.client, seed=args.seed, embedder=settings.embedder))
+
+
 def _processor() -> "Any":
     from accrueboard.agents.review_assistant.service import ReviewAssistant
     from accrueboard.clock import SystemClock
     from accrueboard.db.session import get_sessionmaker
-    from accrueboard.llm.factory import build_llm
+    from accrueboard.llm.factory import ORACLE, build_llm
     from accrueboard.pipeline.process import PipelineModels, Processor
-    from accrueboard.retrieval.embeddings import FastEmbedder
+    from accrueboard.retrieval.embeddings import configured_embedder
 
     settings = get_settings()
     models = PipelineModels(
@@ -76,12 +85,12 @@ def _processor() -> "Any":
         verify=settings.model_verify,
         code=settings.model_code,
     )
-    embedder = FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
+    embedder = configured_embedder()
     llm = build_llm(settings)
     clock = SystemClock()
     assistant = (
         ReviewAssistant(llm, settings.model_assistant, embedder, clock)
-        if settings.review_assistant
+        if settings.review_assistant and settings.llm_mode != ORACLE
         else None
     )
     return Processor(get_sessionmaker(), llm, models, embedder, clock, assistant=assistant)
@@ -226,6 +235,136 @@ def _review_assistant_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def _eval_models() -> "Any":
+    from accrueboard.pipeline.process import PipelineModels
+
+    settings = get_settings()
+    return PipelineModels(
+        classify=settings.model_classify,
+        extract=settings.model_extract,
+        verify=settings.model_verify,
+        code=settings.model_code,
+    )
+
+
+def _eval_llm(replay: bool, archive: Path, scratch: Path, workdir: Path) -> "Any":
+    """The model client for an end-to-end run: committed recordings, or live and recorded."""
+    from accrueboard.eval.archive import unpack
+    from accrueboard.llm.client import RecordingLLM, ReplayMode
+    from accrueboard.llm.factory import build_llm
+
+    if replay:
+        count = unpack(archive, workdir)
+        print(f"replaying {count} recorded responses from {archive.name}")
+        return RecordingLLM(workdir, ReplayMode.REPLAY)
+    live = get_settings().model_copy(
+        update={"recordings_dir": scratch / "recordings", "llm_mode": "auto"}
+    )
+    built = build_llm(live)
+    if not isinstance(built, RecordingLLM):
+        raise TypeError("the end-to-end evaluation records its model calls")
+    return built
+
+
+def _end_to_end(args: argparse.Namespace) -> int:
+    import tempfile
+
+    from accrueboard.datagen.generate import generate
+    from accrueboard.datagen.spec import load_anomaly_catalog, load_client
+    from accrueboard.db.scratch import fresh_database, scratch_url
+    from accrueboard.db.session import get_sessionmaker
+    from accrueboard.eval.end_to_end import MAX_ESCAPE_RATE, run
+    from accrueboard.retrieval.embeddings import FastEmbedder, HashingEmbedder
+
+    settings = get_settings()
+    spec = load_client(args.client)
+    records = generate(spec, load_anomaly_catalog(), args.seed)
+    embedder = (
+        HashingEmbedder(dimensions=384)
+        if args.embedder == "hashing"
+        else FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
+    )
+    models = _eval_models()
+    results = settings.data_dir / "results"
+    scratch = settings.data_dir / "eval-run"
+    meta = {
+        "client": spec.id,
+        "seed": args.seed,
+        "limit": args.limit,
+        "models": {
+            "classify": models.classify,
+            "extract": models.extract,
+            "verify": models.verify,
+            "code": models.code,
+        },
+        "assistant_model": settings.model_assistant,
+        "embedder": settings.embedding_model if args.embedder == "fast" else "hashing",
+        "max_escape_rate": MAX_ESCAPE_RATE,
+    }
+    with tempfile.TemporaryDirectory() as workdir:
+        llm = _eval_llm(args.replay, results / "recordings.tar.gz", scratch, Path(workdir))
+        with fresh_database(scratch_url("e2e")):
+            result = run(
+                records,
+                spec,
+                get_sessionmaker(),
+                llm=llm,
+                models=models,
+                assistant_model=settings.model_assistant,
+                embedder=embedder,
+                limit=args.limit,
+                workers=args.workers,
+                progress=print,
+            )
+    return _save_end_to_end(result, llm, meta, replay=args.replay, limited=args.limit is not None)
+
+
+def _save_end_to_end(
+    result: "Any", llm: "Any", meta: dict[str, Any], *, replay: bool, limited: bool
+) -> int:
+    """Write the results. A full live run also packs its recordings and renders the report;
+    a replay is checked against the committed results."""
+    import json
+
+    from accrueboard.eval.archive import pack
+    from accrueboard.eval.end_to_end import write_results
+
+    settings = get_settings()
+    results = settings.data_dir / "results"
+    committed = results / "end-to-end.json"
+    if not replay and not limited:
+        path = write_results(result, results, meta=meta).replace(committed)
+        packed = pack(llm.store, llm.used, results / "recordings.tar.gz")
+        print(f"wrote {path} and {packed} recordings")
+        return _report(argparse.Namespace())
+    path = write_results(result, settings.data_dir / "eval-run", meta=meta)
+    print(f"wrote {path}")
+    if not replay or not committed.is_file():
+        return 0
+    fresh = json.loads(path.read_text("utf-8"))
+    saved = json.loads(committed.read_text("utf-8"))
+    same = all(fresh[k] == saved[k] for k in ("calibration", "validation", "test"))
+    print(
+        "replay reproduced the committed results exactly"
+        if same
+        else "replay DIFFERS from the committed results"
+    )
+    return 0 if same else 1
+
+
+def _report(_: argparse.Namespace) -> int:
+    import json
+
+    from accrueboard.eval.report import render
+
+    settings = get_settings()
+    source = settings.data_dir / "results" / "end-to-end.json"
+    report = settings.data_dir.parent / "docs" / "eval-results.md"
+    report.write_text(render(json.loads(source.read_text("utf-8"))), "utf-8", newline="\n")
+    print(f"wrote {report}")
+    return 0
+
+
 def _add_eval_commands(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
     evaluate = commands.add_parser("eval", help="evaluation experiments")
     experiments = evaluate.add_subparsers(dest="experiment", required=True)
@@ -266,6 +405,25 @@ def _add_eval_commands(commands: "argparse._SubParsersAction[argparse.ArgumentPa
     assistant.add_argument("--out", help="output directory (default: <data_dir>/eval)")
     assistant.set_defaults(handler=_review_assistant_eval)
 
+    e2e = experiments.add_parser(
+        "end-to-end",
+        help="the whole system on the validation and test splits (the reported numbers)",
+    )
+    e2e.add_argument("--client", default="fernhill")
+    e2e.add_argument("--seed", type=int, default=7)
+    e2e.add_argument(
+        "--replay",
+        action="store_true",
+        help="use the committed recordings (no API key) and check the committed results",
+    )
+    e2e.add_argument("--limit", type=int, help="only the first N documents of each split")
+    e2e.add_argument("--workers", type=int, default=4, help="parallel reads in the warm-up")
+    e2e.add_argument("--embedder", choices=["fast", "hashing"], default="fast")
+    e2e.set_defaults(handler=_end_to_end)
+
+    report = experiments.add_parser("report", help="re-render docs/eval-results.md")
+    report.set_defaults(handler=_report)
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="accrueboard", description=__doc__)
@@ -295,6 +453,13 @@ def main(argv: list[str] | None = None) -> int:
         help="fast = local ONNX model (default); hashing = dependency-free, for tests",
     )
     seed.set_defaults(handler=_seed)
+
+    bootstrap = commands.add_parser(
+        "bootstrap", help="generate the dataset and seed the client if missing (idempotent)"
+    )
+    bootstrap.add_argument("--client", default="fernhill")
+    bootstrap.add_argument("--seed", type=int, default=7)
+    bootstrap.set_defaults(handler=_bootstrap)
 
     ingest_cmd = commands.add_parser("ingest", help="queue document files for processing")
     ingest_cmd.add_argument("files", nargs="+")

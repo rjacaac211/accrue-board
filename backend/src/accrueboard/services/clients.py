@@ -12,6 +12,10 @@ from accrueboard.domain.capitalization import DEFAULT_CAPITALIZATION_THRESHOLD
 from accrueboard.domain.money import money
 from accrueboard.domain.routing import RoutingConfig
 
+DEFAULT_AUTO_POST_THRESHOLD = 0.776
+"""Calibrated on the validation split: the most automation with at most 1% of auto-posted
+documents wrong (see docs/eval-results.md). Re-run the evaluation before changing it."""
+
 
 def load_chart(session: Session, client_id: str) -> ChartOfAccounts:
     rows = session.execute(
@@ -37,7 +41,7 @@ def load_chart(session: Session, client_id: str) -> ChartOfAccounts:
 def routing_config(client: Client) -> RoutingConfig:
     config = client.config or {}
     return RoutingConfig(
-        auto_post_threshold=float(config.get("auto_post_threshold", 0.9)),
+        auto_post_threshold=float(config.get("auto_post_threshold", DEFAULT_AUTO_POST_THRESHOLD)),
         materiality_cap=money(config.get("materiality_cap", "10000.00")),
     )
 

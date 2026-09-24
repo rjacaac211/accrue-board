@@ -1,14 +1,22 @@
 """Build the configured LLM client (record/replay around the Anthropic API)."""
 
 from accrueboard.config import Settings
-from accrueboard.llm.client import AnthropicLLM, ModelClient, RecordingLLM, ReplayMode
+from accrueboard.llm.client import AnthropicLLM, FakeLLM, ModelClient, RecordingLLM, ReplayMode
 
 
 class MissingCredentialsError(RuntimeError):
     pass
 
 
+ORACLE = "oracle"
+"""LLM_MODE for tests and keyless demos: answers from the synthetic dataset's ground truth."""
+
+
 def build_llm(settings: Settings) -> ModelClient:
+    if settings.llm_mode == ORACLE:
+        from accrueboard.eval.oracle import Oracle  # noqa: PLC0415 - only in this mode
+
+        return FakeLLM(Oracle.from_datasets(settings.data_dir / "generated"))
     mode = ReplayMode(settings.llm_mode)
     if mode is ReplayMode.REPLAY:
         return RecordingLLM(settings.recordings_dir, mode)

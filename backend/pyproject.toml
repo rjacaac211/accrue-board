@@ -6,7 +6,11 @@ license = "MIT"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.20.0",
+    "anthropic>=1.8.0",
     "fastapi>=0.141.1",
+    "fastembed>=0.8.1",
+    "numpy>=2.5.3",
+    "pgvector>=0.5.0",
     "pillow>=12.3.0",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.13.5",
@@ -14,6 +18,7 @@ dependencies = [
     "pypdfium2>=5.13.0",
     "pyyaml>=6.0.3",
     "reportlab>=5.0.1",
+    "scikit-learn>=1.9.1",
     "sqlalchemy>=2",
     "uvicorn[standard]>=0.53.0",
 ]
@@ -44,7 +49,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "PLR2004", "ARG"]
+"tests/**" = ["S101", "S105", "PLR2004", "ARG"]
 "src/accrueboard/db/alembic/**" = ["N999"]
 # Synthetic-data tooling: asserts state generator invariants, randomness is seeded and
 # non-cryptographic by design, and page-drawing functions are long by nature.

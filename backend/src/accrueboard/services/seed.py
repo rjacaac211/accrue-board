@@ -24,10 +24,10 @@ from accrueboard.domain.lifecycle import Actor, TaskState
 from accrueboard.retrieval.embeddings import Embedder
 from accrueboard.retrieval.pg_store import PgKnowledgeStore
 from accrueboard.retrieval.seed import history_entries
+from accrueboard.services.clients import DEFAULT_AUTO_POST_THRESHOLD
 from accrueboard.services.ledger import post_entry
 from accrueboard.services.tasks import create_task, record_event
 
-DEFAULT_AUTO_POST_THRESHOLD = 0.9
 """Placeholder until calibration on the validation split sets the real value."""
 
 STAFF = (

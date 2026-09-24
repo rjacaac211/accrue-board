@@ -32,13 +32,13 @@ from accrueboard.datagen.spec import (
     Split,
     VendorSpec,
 )
-from accrueboard.domain.documents import DocumentType, ExtractedDocument, LineItem
+from accrueboard.domain.documents import DocumentType, ExtractedDocument, LineItem, PaymentMethod
 from accrueboard.domain.duplicates import normalize_document_number
 from accrueboard.domain.money import CENT, ZERO, round_money
 from accrueboard.domain.routing import Rule
 from accrueboard.domain.validation import taxable_base
 
-GENERATOR_VERSION = "1"
+GENERATOR_VERSION = "2"
 INVOICE_LAYOUTS = ("classic", "modern", "compact", "boxed", "ledger", "minimal")
 PNG_RECEIPT_SHARE = 0.6
 PRINTED_RATE_SHARE = 0.7
@@ -88,6 +88,17 @@ class BillLine:
     description: str
     quantity: Decimal
     unit_price: Decimal
+
+
+def _payment_method(vendor: VendorSpec, kind: DocumentType) -> PaymentMethod | None:
+    """How a document says it was paid. A receipt is paid by the vendor's usual method; an
+    invoice from a vendor without payment terms says it was "charged to the payment method on
+    file" (see render.py), so it is already paid by card. Other invoices are unpaid bills."""
+    if kind is DocumentType.RECEIPT:
+        return vendor.payment_method
+    if kind is DocumentType.INVOICE and vendor.terms_days == 0:
+        return vendor.payment_method or PaymentMethod.CARD
+    return None
 
 
 class Generator:
@@ -267,7 +278,7 @@ class Generator:
             tax_rate=rate if tax > 0 and print_rate else None,
             tax=tax,
             total=subtotal - discount + shipping + tax,
-            payment_method=vendor.payment_method if kind is DocumentType.RECEIPT else None,
+            payment_method=_payment_method(vendor, kind),
             referenced_document_number=referenced,
         )
         return doc, tuple(bl.item.account for bl in lines)

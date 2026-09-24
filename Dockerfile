@@ -22,4 +22,5 @@ COPY backend/ ./
 RUN uv sync --frozen --no-dev
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
 EXPOSE 8000
-CMD ["sh", "-c", "alembic -c src/accrueboard/db/alembic.ini upgrade head && uvicorn accrueboard.api.app:create_app --factory --host 0.0.0.0 --port 8000"]
+# Migrate, make the demo client ready on first start (generate + seed; a no-op afterwards), serve.
+CMD ["sh", "-c", "alembic -c src/accrueboard/db/alembic.ini upgrade head && accrueboard bootstrap && uvicorn accrueboard.api.app:create_app --factory --host 0.0.0.0 --port 8000"]

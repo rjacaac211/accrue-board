@@ -36,6 +36,7 @@ so they are recorded here in one place.
 | Document | Debit | Credit |
 |---|---|---|
 | Invoice | each line account (landed cost) | Accounts Payable |
+| Invoice already charged ("charged to the payment method on file") | each line account | Card Clearing or Bank, by payment method |
 | Receipt | each line account | Card Clearing or Bank, by payment method |
 | Credit note | Accounts Payable | each line account |
 
@@ -43,6 +44,10 @@ so they are recorded here in one place.
 - Lines coded to the same account are combined into one journal line.
 - Lines may only be coded to asset or expense accounts.
 - A correction after posting is a reversing entry linked to the original, never an edit.
+- An invoice that says it was already charged is settled, so it credits the payment account,
+  like a receipt. Crediting payables would leave a liability that nothing ever clears, because
+  bank and card feeds are out of scope. (The end-to-end evaluation surfaced this: the model
+  read such invoices as paid, which was right, while the posting template assumed a bill.)
 
 ### Capitalization
 - A line item is re-coded to Fixed Assets when its unit price is **strictly above** $2,500 and

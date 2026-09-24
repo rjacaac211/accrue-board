@@ -248,6 +248,8 @@ class RecordingLLM:
         self.store = store
         self.mode = mode
         self.inner = inner
+        self.used: set[Path] = set()
+        """Every recording read or written, so a run's recordings can be packed on their own."""
 
     def path_for(self, request: LLMRequest | ToolUseRequest) -> Path:
         return self.store / request.purpose / f"{request.key}.json"
@@ -274,6 +276,7 @@ class RecordingLLM:
         self, request: LLMRequest | ToolUseRequest, kind: type[R], call: Callable[[], R]
     ) -> R:
         path = self.path_for(request)
+        self.used.add(path)
         if self.mode in (ReplayMode.REPLAY, ReplayMode.AUTO) and path.is_file():
             recorded = json.loads(path.read_text(encoding="utf-8"))
             response = kind.model_validate(recorded["response"])

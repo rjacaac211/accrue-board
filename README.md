@@ -9,27 +9,28 @@ it has been sitting there, and a full audit trail of what happened and why. Revi
 flow back into a per-client knowledge store, so the next similar document is coded with more
 confidence.
 
-> **Status:** early development. Built and tested so far:
-> - the domain core: money, validation, double-entry posting, duplicate and outlier detection,
->   routing, the task lifecycle and bottleneck rules
-> - the synthetic-data generator
-> - the pipeline: classification, grounded extraction, the account-coding cascade, routing and
->   posting, run by workers
-> - the coordination API: review actions with a feedback loop, database-enforced audit and
->   ledger integrity, and live updates over SSE
-> - the web UI: a live board with bottleneck alerts, task review (document viewer, per-field
->   verification, coding signals, routing explanation, audit trail), ledger and knowledge views,
->   and demo controls
->
-> - the feedback loop, measured: on vendors first seen after the history, coding goes from 71%
->   (model only) to 100% once reviewers' confirmations are fed back
->   ([docs/evaluation.md](docs/evaluation.md))
-> - the review assistant: a LangGraph agent that investigates every held document with
->   read-only tools and recommends approve, reject or hold, with evidence. On the validation
->   split it matches the expected action for 34 of 37 held documents
->   ([docs/evaluation.md](docs/evaluation.md))
->
-> The full evaluation report is in progress; unbuilt parts are marked as planned.
+## Results
+
+Measured end to end on 307 held-out test documents with real models (Wilson 95% intervals in
+brackets). Full report: [docs/eval-results.md](docs/eval-results.md).
+
+| | |
+|---|---:|
+| Documents posted without a person | **79.2%** (243/307) [74%, 83%] |
+| Auto-posted documents that were wrong | **0 of 243** [0%, 2%] |
+| Documents that must not post as read, stopped for review | **39 of 39** [91%, 100%] |
+| Bills extracted with every field exactly right | 96.4% [94%, 98%] |
+| Line items coded to the correct account | 98.3% [97%, 99%] |
+| Review assistant recommends the expected action on held documents | 87.5% (56/64) [77%, 94%] |
+| Model cost per document (including the assistant) | $0.022 |
+
+- The auto-post threshold (0.776) was calibrated on a separate validation split: the most
+  automation that keeps auto-posted documents at most 1% wrong.
+- Every number can be reproduced offline, without an API key:
+  `uv run accrueboard eval end-to-end --replay`.
+- The data is synthetic, so the numbers show the mechanism works, not how it would do on a
+  real client's paperwork. See [Scope](#scope) and [docs/evaluation.md](docs/evaluation.md).
+  The evaluation also caught a real bookkeeping bug before any number was reported.
 
 ## How it works
 
@@ -53,9 +54,10 @@ intake → classify → extract → validate → code → score → route ─┬
 - **Measured, not asserted.** An evaluation suite over seeded synthetic data reports:
   - extraction and coding accuracy
   - anomaly precision and recall
-  - automation rate vs error-escape rate
+  - automation against error escape
+  - how the feedback loop and the review assistant perform
 
-  *(planned)*
+  Every reported number replays offline from committed recordings.
 
 ## Data
 
@@ -85,9 +87,17 @@ Prerequisites: Docker. For local development you also need [uv](https://docs.ast
 Node 24 and pnpm.
 
 ```bash
-cp .env.example .env              # add ANTHROPIC_API_KEY when the pipeline lands
-docker compose up --build         # Postgres + app on http://localhost:8000
+cp .env.example .env              # add your ANTHROPIC_API_KEY
+docker compose up --build         # Postgres, the app and a worker on http://localhost:8000
 ```
+
+On first start the app generates the synthetic dataset and seeds the demo client (a fictional
+online retailer with 12 months of history). Open the board and press **Feed 5** to send it
+documents. See [docs/demo.md](docs/demo.md) for a guided walkthrough.
+
+**No API key?** Add `LLM_MODE=oracle` to `.env`. The model is then replaced by the synthetic
+dataset's own ground truth, so the pipeline, board and review flow all work offline, but the
+review assistant is unavailable.
 
 ### Local development
 
@@ -102,6 +112,7 @@ uv run poe dev                            # API on http://localhost:8000
 uv run accrueboard worker                 # process queued documents (needs ANTHROPIC_API_KEY or recordings)
 uv run accrueboard eval learning-curve    # coding accuracy as reviewed documents are fed back
 uv run accrueboard eval review-assistant  # does the assistant recommend the right action? (model)
+uv run accrueboard eval end-to-end --replay  # reproduce the reported results offline
 
 cd ../frontend
 pnpm install
@@ -114,6 +125,9 @@ pnpm dev                                  # UI on http://localhost:5173 (proxies
 cd backend
 uv run poe check              # ruff, pyright, unit tests, frontend lint/typecheck/tests, repo guard
 uv run poe test-integration   # needs the database running
+cd ..
+python scripts/run_e2e.py     # browser smoke test on a real stack (offline model; needs pnpm build)
+python scripts/run_demo.py    # a fresh demo stack with real models on http://localhost:8020
 ```
 
 ## Scope
@@ -127,6 +141,10 @@ These are intentionally out of scope:
 - accounting periods and closing
 - sales-side and cost-of-goods recognition
 - multi-state sales-tax rules beyond a plausibility check
+
+The evaluation uses synthetic documents for one fictional client, generated from known ground
+truth so every result can be checked exactly. The documents are clean renders and phone-style
+scans, not real-world paperwork, so treat the numbers as evidence that the mechanism works.
 
 ## License
 

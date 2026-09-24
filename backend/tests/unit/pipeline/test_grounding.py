@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from decimal import Decimal
 
@@ -78,3 +79,13 @@ def test_a_changed_value_is_not_grounded() -> None:
     assert not results["total"]
     assert not results["issue_date"]
     assert not results["vendor_name"]
+
+
+def test_pdf_text_is_safe_from_many_threads() -> None:
+    # PDFium itself is not thread-safe; without the module lock this crashes the process.
+    pdfs = [r for r in eval_records() if r.file_format == "pdf"][:6]
+    sources = [source_for(r.doc_id) for r in pdfs]
+    expected = [pdf_text(s.data) for s in sources]
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        results = list(pool.map(lambda s: pdf_text(s.data), sources * 10))
+    assert results == expected * 10

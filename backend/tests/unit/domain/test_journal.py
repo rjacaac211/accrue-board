@@ -108,6 +108,21 @@ def test_receipt_credits_the_payment_account(method: PaymentMethod, account: str
     assert credits(entry) == {account: money("232.43")}
 
 
+@pytest.mark.parametrize(
+    ("method", "account"), [(PaymentMethod.CARD, CARD), (PaymentMethod.BANK, BANK)]
+)
+def test_invoice_already_charged_credits_the_payment_account(
+    method: PaymentMethod, account: str
+) -> None:
+    # "Charged to the payment method on file": the bill is already paid, so crediting
+    # payables would leave a liability that nothing ever settles.
+    paid = invoice(payment_method=method)
+    entry = build_entry(paid, [OFFICE, INVENTORY], chart())
+    assert credits(entry) == {account: money("232.43")}
+    as_receipt = invoice(doc_type=DocumentType.RECEIPT, payment_method=method)
+    assert build_entry(as_receipt, [OFFICE, INVENTORY], chart()).lines == entry.lines
+
+
 def test_receipt_without_payment_method_cannot_post() -> None:
     receipt = invoice(doc_type=DocumentType.RECEIPT)
     with pytest.raises(PostingError, match="payment method"):

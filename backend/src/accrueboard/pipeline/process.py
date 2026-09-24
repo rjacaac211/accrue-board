@@ -101,8 +101,13 @@ def ingest(
     received_at: datetime,
     document_id: str | None = None,
     task_id: str | None = None,
+    queued_at: datetime | None = None,
 ) -> Task:
-    """Store an incoming file and queue a task for it."""
+    """Store an incoming file and queue a task for it.
+
+    ``received_at`` is when the document arrived (date checks judge it as of then);
+    ``queued_at`` is when the task entered the queue (its age on the board), by default the same.
+    """
     if session.get(Client, client_id) is None:
         raise ValueError(f"unknown client {client_id!r}")
     document = Document(
@@ -116,7 +121,7 @@ def ingest(
     )
     session.add(document)
     session.flush()
-    return create_task(session, document, now=received_at, task_id=task_id)
+    return create_task(session, document, now=queued_at or received_at, task_id=task_id)
 
 
 # ---------------------------------------------------------------------------- history lookups

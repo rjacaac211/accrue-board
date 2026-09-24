@@ -43,6 +43,11 @@ Guidance for AI coding assistants working in this repository.
   `docker compose up -d db` and `uv run poe migrate` first.
 - `uv run poe dev`: run the API with reload. In `frontend/`, `pnpm dev` runs the UI and
   proxies `/api`.
+- `python scripts/run_e2e.py` (from the repo root): the Playwright smoke test on a real stack,
+  with `LLM_MODE=oracle` standing in for the model. `python scripts/run_demo.py` starts a demo
+  stack with real models.
+- `uv run accrueboard eval end-to-end --replay`: reproduce the committed evaluation results from
+  `data/results/` without an API key. A live run (no `--replay`) costs money: ask first.
 
 ## Testing rules
 - Write tests first for domain logic, and make them pure unit tests.

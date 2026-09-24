@@ -57,6 +57,11 @@ invented.
     four different accounts, which defeats a per-vendor rule.
   - Subscription vendors occasionally bill an annual plan, which belongs in Prepaid Expenses
     rather than the vendor's usual expense account.
+- **Invoices already paid:** subscription vendors without payment terms print "Charged to the
+  payment method on file". Their ground truth records the invoice as paid by card, so it posts
+  against Card Clearing rather than Accounts Payable. (The first end-to-end evaluation run
+  showed these had been labelled as unpaid bills. The label was corrected without changing a
+  single rendered file.)
 - **New vendors (3):** appear only in the evaluation splits, as first-time-vendor cases.
 
 ## Splits (seed 7)

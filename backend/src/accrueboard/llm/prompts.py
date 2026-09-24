@@ -41,8 +41,8 @@ CLASSIFY_SCHEMA: dict[str, Any] = {
 
 # ---------------------------------------------------------------------------- extraction
 
-EXTRACT_VERSION = "extract-v1"
-VERIFY_VERSION = "verify-v1"
+EXTRACT_VERSION = "extract-v2"
+VERIFY_VERSION = "verify-v2"
 
 _EXTRACT_RULES = """\
 Rules:
@@ -58,7 +58,9 @@ column, or an asterisk explained as "taxable item").
 vendor_state is the two-letter US state from the vendor's address.
 - document_number is the invoice, receipt or credit memo number. referenced_document_number \
 is the invoice a credit memo applies to.
-- payment_method: "card" if paid by card, "bank" if paid by bank transfer, otherwise null.
+- payment_method: how the document says it was already paid: "card" if paid or charged by \
+card, including a note that it was charged to the card or payment method on file (autopay); \
+"bank" if paid by bank transfer; null if it is still to be paid or does not say.
 - Use null for anything not printed on the document."""
 
 EXTRACT_SYSTEM = f"""\

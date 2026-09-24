@@ -297,6 +297,13 @@ def test_feed_queues_generated_documents(api: TestClient, world: World, tmp_path
         second = api.post(f"/api/demo/clients/{world.spec.id}/feed", json={"count": 2})
         assert len(first.json()["task_ids"]) == 2
         assert set(first.json()["task_ids"]).isdisjoint(second.json()["task_ids"])
+        # Documents keep their dataset arrival time, so the demo works in any year.
+        fed = detail(api, first.json()["task_ids"][0])
+        arrived = {r.received_at for r in world.records if r.split is Split.VALIDATION}
+        assert any(fed["card"]["received_at"].startswith(a.isoformat()[:19]) for a in arrived)
+        # ...but it joined the queue now, so it is not flagged as waiting for months.
+        assert fed["card"]["age_seconds"] < 3600
+        assert fed["card"]["alert"] is None
     finally:
         settings.data_dir = previous
         settings.demo_mode = False

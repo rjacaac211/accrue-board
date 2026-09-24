@@ -1,13 +1,18 @@
 """A stand-in model that reads documents perfectly, from the generator's ground truth.
 
-Used where an experiment needs the pipeline to run without model error: integration tests, and
-evaluations that isolate one component (for example the review assistant) from extraction and
-coding mistakes.
+Used where the pipeline must run without a model or without model error: integration tests,
+the browser smoke test and keyless demos (``LLM_MODE=oracle``), and evaluations that isolate
+one component (for example the review assistant) from extraction and coding mistakes. It only
+knows the synthetic dataset's own files, and it cannot run the review assistant.
 """
 
+import hashlib
+from pathlib import Path
 from typing import Any
 
 from accrueboard.datagen.records import GroundTruth
+from accrueboard.datagen.spec import EVAL_SPLITS
+from accrueboard.datagen.writer import read_records
 from accrueboard.domain.documents import ExtractedDocument
 from accrueboard.llm.types import FilePart, LLMError, LLMRequest
 
@@ -58,6 +63,20 @@ class Oracle:
 
     def register(self, sha256: str, record: GroundTruth) -> None:
         self.by_sha[sha256] = record
+
+    @classmethod
+    def from_datasets(cls, root: Path) -> "Oracle":
+        """An oracle for every rendered file of every generated dataset under ``root``."""
+        oracle = cls()
+        for dataset in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+            for split in EVAL_SPLITS:
+                if not (dataset / f"{split.value}.jsonl").is_file():
+                    continue
+                for record in read_records(dataset, split):
+                    if record.file is not None and (dataset / record.file).is_file():
+                        data = (dataset / record.file).read_bytes()
+                        oracle.register(hashlib.sha256(data).hexdigest(), record)
+        return oracle
 
     def __call__(self, request: LLMRequest) -> dict[str, Any]:
         if request.purpose == "code":

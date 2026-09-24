@@ -4,8 +4,19 @@
 | Process | Role |
 |---|---|
 | `db` | Postgres 17 with the `vector` and `pg_trgm` extensions. Holds task state, the ledger, the audit log, the knowledge store and the work queue. |
-| `app` | FastAPI. Serves the REST API, the SSE event stream (`/api/events`), and the built frontend. |
+| `app` | FastAPI. Serves the REST API, the SSE event stream (`/api/events`), and the built frontend. On start it applies migrations and, on a fresh installation, generates the dataset and seeds the demo client (`accrueboard bootstrap`). |
 | `worker` | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED` and a lease, runs the pipeline, requeues tasks whose lease expired, and runs the review assistant on documents held for review. |
+
+## Model modes
+`LLM_MODE` chooses where model answers come from:
+
+| Mode | Behaviour |
+|---|---|
+| `auto` (default) | Serve a recorded response if one exists; otherwise call the API and record it |
+| `live` | Always call the API; record nothing |
+| `record` | Always call the API and overwrite the recording |
+| `replay` | Recorded responses only; needs no key (a missing recording is an error) |
+| `oracle` | No model: answers come from the synthetic dataset's ground truth. For the browser smoke test and keyless demos; the review assistant is unavailable |
 
 ## Task lifecycle
 ```

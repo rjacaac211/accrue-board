@@ -392,7 +392,7 @@
       "tax_rate": null,
       "tax": "0.00",
       "total": "110.00",
-      "payment_method": null,
+      "payment_method": "card",
       "referenced_document_number": null
     },
     "line_accounts": [
@@ -504,7 +504,7 @@
       "tax_rate": null,
       "tax": "0.00",
       "total": "1031.61",
-      "payment_method": null,
+      "payment_method": "card",
       "referenced_document_number": null
     },
     "line_accounts": [

@@ -165,6 +165,9 @@ def build_entry(
         if doc.payment_method is None:
             raise PostingError("receipt has no payment method; cannot choose the credit account")
         counter_account = coa.role(_PAYMENT_ROLE[doc.payment_method])
+    elif doc.doc_type is DocumentType.INVOICE and doc.payment_method is not None:
+        # An invoice already charged (e.g. to the card on file) is settled: no payable remains.
+        counter_account = coa.role(_PAYMENT_ROLE[doc.payment_method])
     else:
         counter_account = coa.role(AccountRole.ACCOUNTS_PAYABLE)
 

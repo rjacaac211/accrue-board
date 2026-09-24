@@ -66,3 +66,13 @@ class HashingEmbedder:
                 sign = 1.0 if digest[4] % 2 == 0 else -1.0
                 matrix[row, bucket] += sign
         return _normalize(matrix)
+
+
+def configured_embedder() -> Embedder:
+    """The embedder chosen by the settings (``EMBEDDER``): the local model, or hashing."""
+    from accrueboard.config import get_settings  # noqa: PLC0415 - keeps this module standalone
+
+    settings = get_settings()
+    if settings.embedder == "hashing":
+        return HashingEmbedder(dimensions=384)
+    return FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))

@@ -14,8 +14,9 @@ Guidance for AI coding assistants working in this repository.
 - Commits use Conventional Commits (`feat(pipeline): …`, `fix(ledger): …`, `test(domain): …`).
   The only trailer is `Co-Authored-By: Claude …`. Do not add session links or "generated with"
   footers.
-- Work happens on one branch and one PR per milestone (merge commits, not squash). Merge only
-  after the full local gate, the integration tests and CI all pass.
+- Work happens on one branch and one PR per milestone (merge commits, not squash). Open the PR
+  only after the full local gate, the integration tests and CI pass. The maintainer reviews and
+  merges every PR; never merge one yourself.
 
 ## Layout
 - `backend/src/accrueboard/domain/`: **pure** domain logic (money, validation, journal,

@@ -1,40 +1,31 @@
-import { useEffect, useState } from 'react'
-import { fetchHealth, type Health } from './api'
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AppShell } from '@/components/AppShell'
+import { Toaster } from '@/components/ui/sonner'
+import { BoardPage } from '@/pages/BoardPage'
+import { KnowledgePage } from '@/pages/KnowledgePage'
+import { LedgerPage } from '@/pages/LedgerPage'
+import { TaskPage } from '@/pages/TaskPage'
+import { makeQueryClient } from '@/lib/query'
+import { SessionProvider } from '@/state/session'
 
-type State = { kind: 'loading' } | { kind: 'ready'; health: Health } | { kind: 'error' }
-
-export default function App() {
-  const [state, setState] = useState<State>({ kind: 'loading' })
-
-  useEffect(() => {
-    const controller = new AbortController()
-    fetchHealth(controller.signal)
-      .then((health) => setState({ kind: 'ready', health }))
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          console.error(error)
-          setState({ kind: 'error' })
-        }
-      })
-    return () => controller.abort()
-  }, [])
-
+export default function App({ client = makeQueryClient() }: { client?: QueryClient }) {
   return (
-    <main className="shell">
-      <h1>AccrueBoard</h1>
-      <p className="tagline">Bookkeeping pipeline and live human/AI task board.</p>
-      <section aria-label="System status" className="status">
-        {state.kind === 'loading' && <p>Checking API…</p>}
-        {state.kind === 'error' && <p role="alert">API unreachable.</p>}
-        {state.kind === 'ready' && (
-          <dl>
-            <dt>API</dt>
-            <dd>v{state.health.version}</dd>
-            <dt>Database</dt>
-            <dd>{state.health.database}</dd>
-          </dl>
-        )}
-      </section>
-    </main>
+    <QueryClientProvider client={client}>
+      <SessionProvider>
+        <BrowserRouter>
+          <AppShell>
+            <Routes>
+              <Route path="/" element={<BoardPage />} />
+              <Route path="/tasks/:taskId" element={<TaskPage />} />
+              <Route path="/ledger" element={<LedgerPage />} />
+              <Route path="/knowledge" element={<KnowledgePage />} />
+              <Route path="*" element={<p className="text-sm text-muted-foreground">Page not found.</p>} />
+            </Routes>
+          </AppShell>
+        </BrowserRouter>
+        <Toaster richColors position="bottom-right" />
+      </SessionProvider>
+    </QueryClientProvider>
   )
 }

@@ -17,9 +17,11 @@ confidence.
 >   posting, run by workers
 > - the coordination API: review actions with a feedback loop, database-enforced audit and
 >   ledger integrity, and live updates over SSE
+> - the web UI: a live board with bottleneck alerts, task review (document viewer, per-field
+>   verification, coding signals, routing explanation, audit trail), ledger and knowledge views,
+>   and demo controls
 >
-> The UI, the review assistant and the evaluation are in progress; unbuilt parts are marked as
-> planned.
+> The review assistant and the evaluation are in progress; unbuilt parts are marked as planned.
 
 ## How it works
 

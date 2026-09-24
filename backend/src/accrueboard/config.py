@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     llm_mode: str = "auto"
     """Record/replay mode: live, record, replay or auto (see accrueboard.llm.client)."""
     recordings_dir: Path = Path(__file__).resolve().parents[3] / "data" / "recordings"
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_cache_dir: Path = Path(__file__).resolve().parents[3] / "data" / "models"
 
 
 @lru_cache

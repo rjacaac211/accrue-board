@@ -90,6 +90,30 @@ const detail: TaskDetail = {
     summary: 'Needs review. First-time vendor.',
   },
   line_accounts: ['1300'],
+  assistant: {
+    status: 'done',
+    suggestion: {
+      action: 'approve',
+      summary: 'A new supplier; the bill adds up and the items look like office supplies.',
+      question: null,
+      rule_assessments: [{ rule: 'first_time_vendor', verdict: 'confirmed', reason: 'no earlier documents' }],
+      lines: [{ line: 0, account: '6100', reason: 'blankets for the office, not stock' }],
+      evidence: [{ source: 'vendor_history', detail: 'no earlier documents from this vendor', document_id: null }],
+    },
+    error: null,
+    proposed_accounts: ['1300'],
+    steps: [
+      { turn: 1, tool: 'vendor_history', input: { vendor_name: 'Oakridge' }, output: '{}', is_error: false },
+      { turn: 2, tool: 'submit_review', input: {}, output: 'Recommendation recorded.', is_error: false },
+    ],
+    notes: [],
+    model: 'claude-sonnet-5',
+    prompt_version: 'review-assistant-v1',
+    model_turns: 2,
+    cost_usd: '0.021',
+    replayed: false,
+    ran_at: '2026-03-01T10:01:00Z',
+  },
   last_error: null,
   attempts: 1,
   audit: [],
@@ -194,6 +218,31 @@ describe('task review', () => {
       const [url, init] = post as [string, RequestInit]
       expect(url).toBe('/api/tasks/t1/approve')
       expect(JSON.parse(String(init.body))).toEqual({ reviewer_id: 'u_alex', note: '', accounts: ['6100'] })
+    })
+  })
+
+  it('shows the assistant’s recommendation and applies its accounts only when asked', async () => {
+    window.history.pushState({}, '', '/tasks/t1')
+    render(<App client={makeQueryClient()} />)
+
+    const card = await screen.findByRole('region', { name: 'Review assistant' })
+    expect(within(card).getByText('Approve')).toBeInTheDocument()
+    expect(within(card).getByText('Confirmed')).toBeInTheDocument()
+    expect(within(card).getByText(/Suggests a different account on 1 line/)).toBeInTheDocument()
+
+    const account = await screen.findByLabelText('Account for line 1')
+    await waitFor(() => expect(within(account).getByRole('option', { name: /6100/ })).toBeInTheDocument())
+    expect(account).toHaveValue('1300') // suggest-only: nothing changes by itself
+    fireEvent.click(within(card).getByRole('button', { name: 'Use suggested accounts' }))
+    expect(account).toHaveValue('6100')
+    expect(within(card).queryByText(/Suggests a different account/)).toBeNull()
+
+    fireEvent.click(within(card).getByRole('button', { name: 'Run again' }))
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls
+        .filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+        .map(([url]) => String(url))
+      expect(urls).toContain('/api/tasks/t1/assistant')
     })
   })
 

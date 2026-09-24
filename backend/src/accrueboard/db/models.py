@@ -111,6 +111,8 @@ class Task(Base):
     routing: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     line_accounts: Mapped[list[str] | None] = mapped_column(JSONB)
     """Accounts per line after the capitalization rule (what gets posted)."""
+    assistant: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    """The review assistant's latest investigation (suggest-only; see agents.review_assistant)."""
 
     document: Mapped[Document] = relationship(back_populates="task")
 

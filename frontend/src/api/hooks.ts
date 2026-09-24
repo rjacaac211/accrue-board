@@ -4,6 +4,7 @@ import { getJson, postFile, postJson } from './client'
 import type {
   AccountSummary,
   ActionResult,
+  AssistantRun,
   Bottlenecks,
   Card,
   ClientSummary,
@@ -125,6 +126,14 @@ export function useAction(taskId: string) {
   return useMutation({
     mutationFn: ({ action, reviewer_id, note }: { action: SimpleAction; reviewer_id: string; note: string }) =>
       postJson<ActionResult>(`/api/tasks/${taskId}/${action}`, { reviewer_id, note }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRunAssistant(taskId: string) {
+  const invalidate = useInvalidateAll()
+  return useMutation({
+    mutationFn: () => postJson<AssistantRun>(`/api/tasks/${taskId}/assistant`, {}),
     onSuccess: invalidate,
   })
 }

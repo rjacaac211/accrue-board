@@ -1,8 +1,9 @@
 """Provider-neutral request/response types for the pipeline's LLM calls.
 
-Every call is a single structured-output request: a system prompt, one user turn made of text
-and document parts, and a JSON schema the reply must follow. Requests are canonicalised and
-hashed, which is what the record/replay layer keys on.
+Pipeline calls are single structured-output requests: a system prompt, one user turn made of
+text and document parts, and a JSON schema the reply must follow. The review assistant uses
+tool-use requests instead (a conversation plus tools). Both kinds are canonicalised and hashed,
+which is what the record/replay layer keys on.
 """
 
 import base64
@@ -12,6 +13,11 @@ from decimal import Decimal
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+def _hash(canonical: dict[str, Any]) -> str:
+    blob = json.dumps(canonical, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
 class TextPart(BaseModel):
@@ -77,8 +83,7 @@ class LLMRequest(BaseModel):
     @property
     def key(self) -> str:
         """Stable hash of the canonical request (the record/replay key)."""
-        blob = json.dumps(self.canonical(), sort_keys=True, separators=(",", ":"))
-        return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+        return _hash(self.canonical())
 
 
 class Usage(BaseModel):
@@ -101,6 +106,97 @@ class LLMResponse(BaseModel):
     latency_ms: int
     request_id: str | None = None
     replayed: bool = False
+
+
+# ---------------------------------------------------------------------------- tool use
+#
+# The review assistant holds a conversation: the model asks for tools, the caller runs them
+# and sends back the results. Each model turn is one request whose canonical form contains the
+# whole conversation so far, so a recorded investigation replays turn by turn.
+
+
+class ToolSpec(BaseModel):
+    """A tool the model may call. Schemas follow the strict tool-use subset of JSON Schema."""
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    description: str
+    input_schema: dict[str, Any]
+
+
+class ToolCall(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    name: str
+    input: dict[str, Any]
+
+
+class ToolResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    call_id: str
+    content: str
+    is_error: bool = False
+
+
+class UserTurn(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    role: Literal["user"] = "user"
+    text: str = ""
+    results: tuple[ToolResult, ...] = ()
+
+
+class AssistantTurn(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    role: Literal["assistant"] = "assistant"
+    text: str = ""
+    calls: tuple[ToolCall, ...] = ()
+
+
+Turn = UserTurn | AssistantTurn
+
+
+class ToolUseRequest(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    purpose: str
+    prompt_version: str
+    model: str
+    system: str
+    turns: tuple[Turn, ...]
+    tools: tuple[ToolSpec, ...]
+    force_tool: str | None = None
+    """Name of a tool the model must call this turn; otherwise it must call some tool."""
+    max_tokens: int = 4096
+
+    def canonical(self) -> dict[str, Any]:
+        return self.model_dump(mode="json")
+
+    @property
+    def key(self) -> str:
+        return _hash(self.canonical())
+
+
+class ToolUseResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    text: str
+    calls: tuple[ToolCall, ...]
+    model: str
+    stop_reason: str
+    usage: Usage
+    cost_usd: Decimal
+    latency_ms: int
+    request_id: str | None = None
+    replayed: bool = False
+
+    @property
+    def turn(self) -> AssistantTurn:
+        return AssistantTurn(text=self.text, calls=self.calls)
 
 
 class LLMError(RuntimeError):

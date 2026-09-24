@@ -3,20 +3,22 @@
     ingest ──> Queued ──claim──> Processing ──> classify ─> extract ─> code ─> capitalize
                                                 ─> validate, duplicates, outliers, rules
                                                 ─> decide ──> AutoApproved ─> post ─> Posted
-                                                          └─> NeedsReview
+                                                          └─> NeedsReview ─> review assistant
     (any unexpected error)                      ─> Failed
 
 Claiming uses ``SELECT ... FOR UPDATE SKIP LOCKED`` so several workers can run side by side
 without taking the same task, and a lease so a task held by a crashed worker is re-queued.
 Each task is processed in a single transaction: its results, audit events, journal entry and
-model-call records are committed together or not at all.
+model-call records are committed together or not at all. A document held for review is then
+investigated by the review assistant (if configured) in a transaction of its own, so a failed
+investigation never undoes the pipeline's work.
 """
 
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
@@ -55,6 +57,9 @@ from accrueboard.services import ledger
 from accrueboard.services.clients import capitalization_threshold, load_chart, routing_config
 from accrueboard.services.seed import fingerprint_columns
 from accrueboard.services.tasks import create_task, new_id, transition
+
+if TYPE_CHECKING:
+    from accrueboard.agents.review_assistant.service import ReviewAssistant
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +100,7 @@ def ingest(
     *,
     received_at: datetime,
     document_id: str | None = None,
+    task_id: str | None = None,
 ) -> Task:
     """Store an incoming file and queue a task for it."""
     if session.get(Client, client_id) is None:
@@ -110,7 +116,7 @@ def ingest(
     )
     session.add(document)
     session.flush()
-    return create_task(session, document, now=received_at)
+    return create_task(session, document, now=received_at, task_id=task_id)
 
 
 # ---------------------------------------------------------------------------- history lookups
@@ -198,8 +204,11 @@ class Processor:
         models: PipelineModels,
         embedder: Embedder,
         clock: Clock,
+        *,
+        assistant: "ReviewAssistant | None" = None,
     ) -> None:
         self.sessions = sessions
+        self.assistant = assistant
         self.llm = llm
         self.models = models
         self.embedder = embedder
@@ -275,6 +284,22 @@ class Processor:
     # ------------------------------------------------------------------ processing
 
     def process(self, task_id: str) -> ProcessOutcome:
+        outcome = self._run_pipeline(task_id)
+        if outcome.state is TaskState.NEEDS_REVIEW and self.assistant is not None:
+            self.investigate(task_id)
+        return outcome
+
+    def investigate(self, task_id: str) -> None:
+        """Run the review assistant on a task; a failure is logged, never raised."""
+        if self.assistant is None:
+            return
+        try:
+            with self.sessions() as session, session.begin():
+                self.assistant.run(session, task_id)
+        except Exception:
+            log.exception("review assistant crashed on task %s", task_id)
+
+    def _run_pipeline(self, task_id: str) -> ProcessOutcome:
         try:
             with self.sessions() as session, session.begin():
                 return self._process(session, task_id)

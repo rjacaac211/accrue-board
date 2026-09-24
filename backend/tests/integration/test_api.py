@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import update
 
+from accrueboard.agents.review_assistant.service import ReviewAssistant
 from accrueboard.api import deps
 from accrueboard.api.app import create_app
 from accrueboard.api.events import stream
@@ -18,6 +19,8 @@ from accrueboard.config import get_settings
 from accrueboard.datagen.records import GroundTruth
 from accrueboard.datagen.spec import Split
 from accrueboard.db.models import Task
+from accrueboard.llm.client import FakeLLM
+from accrueboard.llm.types import ToolCall, ToolUseRequest
 from accrueboard.services.clock import SharedClock
 
 from .helpers import World, make_world
@@ -214,6 +217,53 @@ def test_assign(api: TestClient, world: World) -> None:
     )
     assert response.status_code == 200
     assert detail(api, task_id)["card"]["assignee_id"] == "u_sam"
+
+
+def test_review_assistant_endpoint(api: TestClient, world: World) -> None:
+    record = pick(world, labelled("amount_outlier"))
+    task_id = world.process(record)  # the world's processor has no assistant attached
+    assert detail(api, task_id)["assistant"] is None
+
+    def hold(_: ToolUseRequest) -> list[ToolCall]:
+        return [
+            ToolCall(
+                id="s1",
+                name="submit_review",
+                input={
+                    "action": "block",
+                    "summary": "Far above this vendor's usual bills.",
+                    "question": "Ask the client to confirm the order.",
+                    "rule_assessments": [],
+                    "lines": [
+                        {"line": i, "account": a, "reason": "usual"}
+                        for i, a in enumerate(record.line_accounts)
+                    ],
+                    "evidence": [],
+                },
+            )
+        ]
+
+    llm = FakeLLM(lambda _: {}, tool_handler=hold)
+    app: Any = api.app
+    app.dependency_overrides[deps.get_assistant] = lambda: ReviewAssistant(
+        llm, "claude-sonnet-5", deps.get_embedder(), world.clock
+    )
+    try:
+        response = api.post(f"/api/tasks/{task_id}/assistant")
+        assert response.status_code == 200, response.text
+        assert response.json()["suggestion"]["action"] == "block"
+        body = detail(api, task_id)
+        assert body["card"]["state"] == "needs_review"
+        assert body["assistant"]["suggestion"]["question"] == "Ask the client to confirm the order."
+        assert body["audit"][-1]["actor"] == "review-assistant"
+        assert "review_assistant" in {c["purpose"] for c in body["calls"]}
+
+        assert api.post("/api/tasks/task_nope/assistant").status_code == 404
+        history = next(r for r in world.records if r.split is Split.HISTORY)
+        posted = f"task_{history.doc_id}"  # history is imported as posted tasks
+        assert api.post(f"/api/tasks/{posted}/assistant").status_code == 409
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_upload_queues_a_task(api: TestClient, world: World) -> None:

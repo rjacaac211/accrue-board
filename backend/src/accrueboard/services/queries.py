@@ -128,6 +128,7 @@ class TaskDetail(BaseModel):
     coding: dict[str, Any] | None
     routing: dict[str, Any] | None
     line_accounts: list[str] | None
+    assistant: dict[str, Any] | None
     last_error: str | None
     attempts: int
     audit: list[AuditItem]
@@ -311,6 +312,7 @@ def task_detail(session: Session, task_id: str, now: datetime) -> TaskDetail | N
         coding=task.coding,
         routing=task.routing,
         line_accounts=task.line_accounts,
+        assistant=task.assistant,
         last_error=task.last_error,
         attempts=task.attempts,
         audit=[

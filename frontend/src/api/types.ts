@@ -174,6 +174,42 @@ export interface CallView {
   replayed: boolean
 }
 
+export type SuggestedAction = 'approve' | 'reject' | 'block'
+export type Verdict = 'confirmed' | 'false_positive' | 'uncertain'
+
+export interface Suggestion {
+  action: SuggestedAction
+  summary: string
+  question: string | null
+  rule_assessments: { rule: string; verdict: Verdict; reason: string }[]
+  lines: { line: number; account: string; reason: string }[]
+  evidence: { source: string; detail: string; document_id: string | null }[]
+}
+
+export interface AssistantStep {
+  turn: number
+  tool: string
+  input: Record<string, unknown>
+  output: string
+  is_error: boolean
+}
+
+// The review assistant's latest investigation (suggest-only; see agents/review_assistant).
+export interface AssistantRun {
+  status: 'done' | 'failed'
+  suggestion: Suggestion | null
+  error: string | null
+  proposed_accounts: string[]
+  steps: AssistantStep[]
+  notes: string[]
+  model: string
+  prompt_version: string
+  model_turns: number
+  cost_usd: string
+  replayed: boolean
+  ran_at: string
+}
+
 export interface TaskDetail {
   card: Card
   client_id: string
@@ -184,6 +220,7 @@ export interface TaskDetail {
   coding: Coding | null
   routing: Routing | null
   line_accounts: string[] | null
+  assistant: AssistantRun | null
   last_error: string | null
   attempts: number
   audit: AuditItem[]

@@ -24,9 +24,12 @@ confidence.
 > - the feedback loop, measured: on vendors first seen after the history, coding goes from 71%
 >   (model only) to 100% once reviewers' confirmations are fed back
 >   ([docs/evaluation.md](docs/evaluation.md))
+> - the review assistant: a LangGraph agent that investigates every held document with
+>   read-only tools and recommends approve, reject or hold, with evidence. On the validation
+>   split it matches the expected action for 34 of 37 held documents
+>   ([docs/evaluation.md](docs/evaluation.md))
 >
-> The review assistant and the full evaluation report are in progress; unbuilt parts are marked
-> as planned.
+> The full evaluation report is in progress; unbuilt parts are marked as planned.
 
 ## How it works
 
@@ -42,7 +45,7 @@ intake → classify → extract → validate → code → score → route ─┬
   choosing an account. Every routing decision is deterministic and explainable.
 - **An agent where judgment helps.** A tool-using Review Assistant (LangGraph) investigates
   flagged items and suggests a resolution, citing its evidence. It cannot post or approve
-  anything. *(planned)*
+  anything.
 - **Confidence comes from checks, not from the model's opinion of itself.** It is built from
   signals that can be verified: whether an extracted value actually appears in the document,
   whether the arithmetic adds up, whether independent coding methods agree, and whether a
@@ -98,6 +101,7 @@ uv run accrueboard seed                   # load the client and 12 months of pos
 uv run poe dev                            # API on http://localhost:8000
 uv run accrueboard worker                 # process queued documents (needs ANTHROPIC_API_KEY or recordings)
 uv run accrueboard eval learning-curve    # coding accuracy as reviewed documents are fed back
+uv run accrueboard eval review-assistant  # does the assistant recommend the right action? (model)
 
 cd ../frontend
 pnpm install

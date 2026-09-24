@@ -128,6 +128,50 @@ def _worker(args: argparse.Namespace) -> int:
         time.sleep(args.poll)
 
 
+def _learning_curve(args: argparse.Namespace) -> int:
+    from accrueboard.datagen.generate import generate
+    from accrueboard.datagen.spec import load_anomaly_catalog, load_client
+    from accrueboard.eval.learning_curve import ALL, learning_curve, to_markdown, write_report
+    from accrueboard.llm.factory import build_llm
+    from accrueboard.retrieval.embeddings import FastEmbedder, HashingEmbedder
+
+    settings = get_settings()
+    spec = load_client(args.client)
+    records = generate(spec, load_anomaly_catalog(), args.seed)
+    embedder = (
+        HashingEmbedder(dimensions=384)
+        if args.embedder == "hashing"
+        else FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
+    )
+    steps = [ALL if s.strip() == "all" else int(s) for s in args.steps.split(",")]
+    llm = build_llm(settings) if args.with_model else None
+    points = learning_curve(
+        records,
+        spec,
+        embedder,
+        steps=steps,
+        llm=llm,
+        model=settings.model_code,
+        test_limit=args.test_limit,
+        new_vendors_only=args.new_vendors_only,
+    )
+    out = Path(args.out) if args.out else settings.data_dir / "eval"
+    meta = {
+        "client": spec.id,
+        "seed": args.seed,
+        "steps": steps,
+        "embedder": args.embedder,
+        "with_model": bool(args.with_model),
+        "model": settings.model_code if args.with_model else None,
+        "test_limit": args.test_limit,
+        "new_vendors_only": args.new_vendors_only,
+    }
+    path = write_report(points, out, meta=meta)
+    print(to_markdown(points))
+    print(f"wrote {path}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="accrueboard", description=__doc__)
     parser.add_argument("--version", action="version", version=f"accrueboard {__version__}")
@@ -175,6 +219,33 @@ def main(argv: list[str] | None = None) -> int:
     worker.add_argument("--drain", action="store_true", help="exit when the queue is empty")
     worker.add_argument("--poll", type=float, default=2.0, help="seconds between queue checks")
     worker.set_defaults(handler=_worker)
+
+    evaluate = commands.add_parser("eval", help="evaluation experiments")
+    experiments = evaluate.add_subparsers(dest="experiment", required=True)
+    curve = experiments.add_parser(
+        "learning-curve", help="coding accuracy as reviewed documents are fed back"
+    )
+    curve.add_argument("--client", default="fernhill")
+    curve.add_argument("--seed", type=int, default=7)
+    curve.add_argument(
+        "--steps",
+        default="0,50,100,all",
+        help="numbers of reviewed documents to feed back, comma separated ('all' = every one)",
+    )
+    curve.add_argument(
+        "--with-model",
+        action="store_true",
+        help="also evaluate the full cascade (calls or replays the model)",
+    )
+    curve.add_argument("--test-limit", type=int, help="evaluate only the first N test documents")
+    curve.add_argument(
+        "--new-vendors-only",
+        action="store_true",
+        help="evaluate only test documents from vendors absent from the history",
+    )
+    curve.add_argument("--embedder", choices=["fast", "hashing"], default="fast")
+    curve.add_argument("--out", help="output directory (default: <data_dir>/eval)")
+    curve.set_defaults(handler=_learning_curve)
 
     args = parser.parse_args(argv)
     if not hasattr(args, "handler"):

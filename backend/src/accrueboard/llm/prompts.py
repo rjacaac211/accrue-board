@@ -133,3 +133,48 @@ EXTRACT_SCHEMA: dict[str, Any] = {
 def extraction_instruction(doc_type: str) -> str:
     kind = doc_type.replace("_", " ")
     return f"This document has been classified as: {kind}. Extract its fields."
+
+
+# ---------------------------------------------------------------------------- account coding
+
+CODE_VERSION = "code-v1"
+
+CODE_SYSTEM_TEMPLATE = """\
+You are the bookkeeper for {client_name}, {business}. Assign every line item on a supplier \
+document to one account from the client's chart of accounts below.
+
+How to decide:
+- This client codes consistently. Follow how the same vendor and similar items were coded \
+before (history is given with each document) unless the item is clearly different.
+- Stock bought for resale goes to Inventory, not Cost of Goods Sold.
+- Computers, printers, scanners, shelving and similar equipment go to Small Equipment \
+whatever their price; a separate rule capitalizes expensive items.
+- Advance payments for future periods (such as an annual plan) go to Prepaid Expenses.
+
+Give a short reason for each line, naming the history or rule you relied on.
+
+Chart of accounts:
+{chart}"""
+
+
+def code_schema(account_codes: list[str]) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "lines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "line": {"type": "integer"},
+                        "account": {"type": "string", "enum": account_codes},
+                        "reason": {"type": "string"},
+                    },
+                    "required": ["line", "account", "reason"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "required": ["lines"],
+        "additionalProperties": False,
+    }

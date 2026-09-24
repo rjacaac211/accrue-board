@@ -428,7 +428,7 @@ def receipt_rows(record: GroundTruth, vendor: VendorSpec) -> list[ReceiptRow]:
     for item in doc.lines:
         tag = " T" if item.taxable else "  "
         rows += [
-            ReceiptRow(advance=12, left=item.description[:34]),
+            ReceiptRow(advance=12, left=item.description),
             ReceiptRow(
                 advance=10,
                 left=f"{quantity(item.quantity)} @ {money_plain(item.unit_price)}",

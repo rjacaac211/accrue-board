@@ -42,6 +42,8 @@ GENERATOR_VERSION = "1"
 INVOICE_LAYOUTS = ("classic", "modern", "compact", "boxed", "ledger", "minimal")
 PNG_RECEIPT_SHARE = 0.6
 PRINTED_RATE_SHARE = 0.7
+ALIAS_SHARE = 0.5
+"""Share of lines printed with one of the item's alternative wordings."""
 SEASONAL_MONTHS = frozenset({10, 11, 12})
 SEASONAL_FACTOR = Decimal("1.35")
 
@@ -83,6 +85,7 @@ class Draft:
 @dataclass(frozen=True)
 class BillLine:
     item: CatalogItem
+    description: str
     quantity: Decimal
     unit_price: Decimal
 
@@ -199,7 +202,10 @@ class Generator:
                 qty = (qty * factor).to_integral_value()
             lo, hi = (int(p / CENT) for p in item.price)
             price = item.price[0] if item.fixed else Decimal(rng.randint(lo, hi)) * CENT
-            lines.append(BillLine(item=item, quantity=qty, unit_price=price))
+            wording = item.description
+            if item.aliases and rng.random() < ALIAS_SHARE:
+                wording = rng.choice(item.aliases)
+            lines.append(BillLine(item=item, description=wording, quantity=qty, unit_price=price))
         return lines
 
     def build_doc(
@@ -222,7 +228,7 @@ class Generator:
         kind = doc_type or DocumentType(vendor.doc_type)
         items = tuple(
             LineItem(
-                description=bl.item.description,
+                description=bl.description,
                 quantity=bl.quantity,
                 unit_price=bl.unit_price,
                 amount=round_money(bl.quantity * bl.unit_price),
@@ -311,13 +317,22 @@ class Generator:
         index = rng.randrange(len(invoice.doc.lines))
         original = invoice.doc.lines[index]
         qty = Decimal(rng.randint(1, max(1, min(int(original.quantity), 6))))
-        catalog_item = next(i for i in vendor.catalog if i.description == original.description)
+        catalog_item = next(
+            i for i in vendor.catalog if original.description in (i.description, *i.aliases)
+        )
         assert invoice.doc.issue_date is not None
         issue = invoice.doc.issue_date + timedelta(days=days_later or rng.randint(3, 20))
         doc, accounts = self.build_doc(
             vendor,
             issue,
-            [BillLine(item=catalog_item, quantity=qty, unit_price=original.unit_price)],
+            [
+                BillLine(
+                    item=catalog_item,
+                    description=original.description,
+                    quantity=qty,
+                    unit_price=original.unit_price,
+                )
+            ],
             doc_type=DocumentType.CREDIT_NOTE,
             number=self.next_credit_number(vendor),
             discount_pct=0,
@@ -824,7 +839,7 @@ class _Injector:
                 "kind": kind,
                 "rows": [
                     {
-                        "description": bl.item.description,
+                        "description": bl.description,
                         "quantity": str(bl.quantity),
                         "unit_price": str(bl.unit_price),
                         "amount": str(round_money(bl.quantity * bl.unit_price)),

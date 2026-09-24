@@ -69,7 +69,7 @@ def test_every_scored_value_is_printed(samples: list[GroundTruth], spec: ClientS
         assert doc.subtotal is not None
         assert f"{doc.subtotal:.2f}" in text, record.doc_id
         for item in doc.lines:
-            assert item.description[:34] in text, (record.doc_id, item.description)
+            assert item.description.replace(",", "") in text, (record.doc_id, item.description)
             assert f"{item.amount:.2f}" in text, record.doc_id
         if doc.tax > 0:
             assert f"{doc.tax:.2f}" in text, record.doc_id

@@ -55,6 +55,7 @@ accounts:
   - {code: "6550", name: Meals, type: expense}
   - {code: "6600", name: Insurance, type: expense}
   - {code: "6700", name: Repairs & Maintenance, type: expense}
+  - {code: "6750", name: Cleaning & Breakroom, type: expense, description: Cleaning products, paper towels and breakroom supplies}
   - {code: "6800", name: Telephone & Internet, type: expense}
   - {code: "6900", name: Bank Charges, type: expense}
 
@@ -81,10 +82,10 @@ vendors:
     credit_note_prob: 0.07
     seasonal: true
     catalog:
-      - {description: Linen throw blanket - natural, account: "1300", price: ["18.50", "21.00"], qty: [10, 50]}
-      - {description: Waffle weave bath towel set, account: "1300", price: ["14.00", "16.50"], qty: [12, 60]}
-      - {description: Stonewashed cotton napkins (set of 4), account: "1300", price: ["7.25", "8.40"], qty: [20, 80]}
-      - {description: Chunky knit cushion cover 18in, account: "1300", price: ["9.80", "11.20"], qty: [12, 48]}
+      - {description: Linen throw blanket - natural, account: "1300", price: ["18.50", "21.00"], qty: [10, 50], aliases: ["LINEN THROW NATURAL 50X60", "Throw blanket, linen (natural)"]}
+      - {description: Waffle weave bath towel set, account: "1300", price: ["14.00", "16.50"], qty: [12, 60], aliases: ["Bath towel set - waffle knit", "TOWEL SET WAFFLE WHITE"]}
+      - {description: Stonewashed cotton napkins (set of 4), account: "1300", price: ["7.25", "8.40"], qty: [20, 80], aliases: ["Cotton napkin 4pk stonewash", "Table napkins, cotton x4"]}
+      - {description: Chunky knit cushion cover 18in, account: "1300", price: ["9.80", "11.20"], qty: [12, 48], aliases: ["Cushion cover 18x18 knit", "KNIT PILLOW COVER 18IN"]}
 
   - id: meadowbrook
     name: Meadowbrook Ceramics Co.
@@ -99,9 +100,9 @@ vendors:
     credit_note_prob: 0.1
     seasonal: true
     catalog:
-      - {description: Speckled stoneware mug 12oz, account: "1300", price: ["5.60", "6.40"], qty: [24, 120]}
-      - {description: Matte dinner plate 10.5in, account: "1300", price: ["7.90", "9.10"], qty: [24, 96]}
-      - {description: Serving bowl - sand glaze, account: "1300", price: ["14.20", "16.00"], qty: [6, 36]}
+      - {description: Speckled stoneware mug 12oz, account: "1300", price: ["5.60", "6.40"], qty: [24, 120], aliases: ["Stoneware mug, speckled 12 oz", "MUG 12OZ SPECKLE"]}
+      - {description: Matte dinner plate 10.5in, account: "1300", price: ["7.90", "9.10"], qty: [24, 96], aliases: ["Dinner plate matte 10.5\"", "PLATE DINNER MATTE"]}
+      - {description: Serving bowl - sand glaze, account: "1300", price: ["14.20", "16.00"], qty: [6, 36], aliases: ["Sand glaze serving bowl", "BOWL SERVING SAND"]}
 
   - id: copperleaf
     name: Copperleaf Candle Company
@@ -116,9 +117,9 @@ vendors:
     credit_note_prob: 0.05
     seasonal: true
     catalog:
-      - {description: Soy candle 8oz - cedar & smoke, account: "1300", price: ["6.10", "6.90"], qty: [24, 96]}
-      - {description: Soy candle 8oz - fig & vetiver, account: "1300", price: ["6.10", "6.90"], qty: [24, 96]}
-      - {description: Reed diffuser 100ml, account: "1300", price: ["8.30", "9.50"], qty: [12, 48]}
+      - {description: Soy candle 8oz - cedar & smoke, account: "1300", price: ["6.10", "6.90"], qty: [24, 96], aliases: ["Candle 8oz cedar/smoke", "Cedar + smoke soy candle 8 oz"]}
+      - {description: Soy candle 8oz - fig & vetiver, account: "1300", price: ["6.10", "6.90"], qty: [24, 96], aliases: ["Candle 8oz fig/vetiver", "Fig + vetiver soy candle 8 oz"]}
+      - {description: Reed diffuser 100ml, account: "1300", price: ["8.30", "9.50"], qty: [12, 48], aliases: ["Diffuser, reed 100 mL", "REED DIFFUSER 100"]}
 
   - id: silverline
     name: Silverline Glassworks LLC
@@ -133,8 +134,8 @@ vendors:
     credit_note_prob: 0.12
     seasonal: true
     catalog:
-      - {description: Ribbed glass tumbler (set of 4), account: "1300", price: ["11.40", "12.80"], qty: [12, 72]}
-      - {description: Hand-blown bud vase, account: "1300", price: ["8.75", "10.20"], qty: [12, 48]}
+      - {description: Ribbed glass tumbler (set of 4), account: "1300", price: ["11.40", "12.80"], qty: [12, 72], aliases: ["Tumbler set ribbed glass x4", "Glass tumblers, ribbed - 4 pack"]}
+      - {description: Hand-blown bud vase, account: "1300", price: ["8.75", "10.20"], qty: [12, 48], aliases: ["Bud vase, hand blown", "VASE BUD HANDBLOWN"]}
       - {description: Recycled glass carafe 1L, account: "1300", price: ["12.10", "13.60"], qty: [6, 36]}
 
   - id: bramble
@@ -151,8 +152,8 @@ vendors:
     credit_note_prob: 0.06
     seasonal: true
     catalog:
-      - {description: Acacia wood serving board, account: "1300", price: ["13.00", "15.40"], qty: [6, 36]}
-      - {description: Woven seagrass basket - medium, account: "1300", price: ["10.20", "12.00"], qty: [8, 40]}
+      - {description: Acacia wood serving board, account: "1300", price: ["13.00", "15.40"], qty: [6, 36], aliases: ["Serving board - acacia", "ACACIA BOARD LG"]}
+      - {description: Woven seagrass basket - medium, account: "1300", price: ["10.20", "12.00"], qty: [8, 40], aliases: ["Seagrass basket M", "Basket, woven seagrass (medium)"]}
       - {description: Beeswax food wrap 3-pack, account: "1300", price: ["4.10", "4.80"], qty: [24, 120]}
       - {description: Olive wood salad servers, account: "1300", price: ["6.50", "7.40"], qty: [12, 48]}
 
@@ -167,7 +168,7 @@ vendors:
     terms_days: 15
     lines: [1, 2]
     catalog:
-      - {description: LTL freight - inbound pallet, account: "5100", price: ["145.00", "320.00"], qty: [1, 3]}
+      - {description: LTL freight - inbound pallet, account: "5100", price: ["145.00", "320.00"], qty: [1, 3], aliases: ["Inbound LTL - 1 pallet", "Freight charge: pallet inbound"]}
       - {description: Liftgate delivery surcharge, account: "5100", price: ["45.00", "45.00"], qty: [1, 1]}
 
   - id: boxcraft
@@ -181,9 +182,9 @@ vendors:
     lines: [1, 4]
     shipping: {prob: 0.3, min: "15.00", max: "35.00"}
     catalog:
-      - {description: Corrugated shipping box 12x10x6 (bundle of 25), account: "5300", price: ["21.00", "24.50"], qty: [2, 12]}
-      - {description: Kraft padded mailer 10x13 (case of 100), account: "5300", price: ["38.00", "42.00"], qty: [1, 5]}
-      - {description: Packing tape 2in x 110yd (6 rolls), account: "5300", price: ["16.80", "18.90"], qty: [1, 6]}
+      - {description: Corrugated shipping box 12x10x6 (bundle of 25), account: "5300", price: ["21.00", "24.50"], qty: [2, 12], aliases: ["12x10x6 corrugated boxes 25/bdl", "Shipping cartons 12x10x6 (25)"]}
+      - {description: Kraft padded mailer 10x13 (case of 100), account: "5300", price: ["38.00", "42.00"], qty: [1, 5], aliases: ["Padded mailers kraft #5 100ct", "Mailer, padded kraft 10x13 case"]}
+      - {description: Packing tape 2in x 110yd (6 rolls), account: "5300", price: ["16.80", "18.90"], qty: [1, 6], aliases: ["Carton sealing tape 6pk", "Tape, packing clear 2\" (6)"]}
       - {description: Tissue paper - ivory (ream), account: "5300", price: ["19.50", "22.00"], qty: [1, 4]}
 
   - id: parcelwise
@@ -196,7 +197,7 @@ vendors:
     terms_days: 7
     lines: [1, 2]
     catalog:
-      - {description: Ground shipping - weekly consolidated, account: "5200", price: ["380.00", "760.00"], qty: [1, 1]}
+      - {description: Ground shipping - weekly consolidated, account: "5200", price: ["380.00", "760.00"], qty: [1, 1], aliases: ["Weekly ground parcel charges", "Parcel shipments - ground (week)"]}
       - {description: Residential delivery surcharge, account: "5200", price: ["28.00", "64.00"], qty: [1, 1]}
 
   - id: swiftlane
@@ -252,6 +253,7 @@ vendors:
     lines: [1, 1]
     catalog:
       - {description: Email marketing plan - 10k contacts, account: "6200", price: ["110.00", "110.00"], qty: [1, 1], fixed: true}
+      - {description: Email marketing plan - 12 months prepaid, account: "1400", price: ["1188.00", "1188.00"], qty: [1, 1], fixed: true, rare: true}
 
   - id: brightdesk
     name: Brightdesk Support Software
@@ -264,6 +266,7 @@ vendors:
     lines: [1, 1]
     catalog:
       - {description: Help desk seats x3 (monthly), account: "6200", price: ["57.00", "57.00"], qty: [1, 1], fixed: true}
+      - {description: Help desk seats x3 - annual plan (prepaid), account: "1400", price: ["615.00", "615.00"], qty: [1, 1], fixed: true, rare: true}
 
   - id: ledgerbook
     name: Ledgerbook Cloud Accounting
@@ -276,6 +279,7 @@ vendors:
     lines: [1, 1]
     catalog:
       - {description: Accounting software - Plus plan, account: "6200", price: ["49.00", "49.00"], qty: [1, 1], fixed: true}
+      - {description: "Accounting software - Plus plan (annual, prepaid)", account: "1400", price: ["529.00", "529.00"], qty: [1, 1], fixed: true, rare: true}
 
   # ---------------------------------------------------------------- marketing and creative
   - id: pixelreach
@@ -289,7 +293,7 @@ vendors:
     lines: [1, 1]
     seasonal: true
     catalog:
-      - {description: Search and display ads - monthly spend, account: "6000", price: ["900.00", "1600.00"], qty: [1, 1]}
+      - {description: Search and display ads - monthly spend, account: "6000", price: ["900.00", "1600.00"], qty: [1, 1], aliases: ["Online advertising - monthly", "Ad spend: search + display"]}
 
   - id: socialspark
     name: Socialspark Media
@@ -314,7 +318,7 @@ vendors:
     terms_days: 14
     lines: [1, 2]
     catalog:
-      - {description: Graphic design - product listing templates (hours), account: "6400", price: ["85.00", "85.00"], qty: [4, 14]}
+      - {description: Graphic design - product listing templates (hours), account: "6400", price: ["85.00", "85.00"], qty: [4, 14], aliases: ["Design work - listing templates (hrs)", "Template design services, hourly"]}
       - {description: Packaging insert design revision (hours), account: "6400", price: ["85.00", "85.00"], qty: [1, 5]}
 
   - id: lumenstudio
@@ -405,10 +409,10 @@ vendors:
     schedule: {every_days: 11, jitter_days: 4}
     lines: [1, 4]
     catalog:
-      - {description: Copy paper letter (case), account: "6100", price: ["42.99", "46.99"], qty: [1, 2], taxable: true}
-      - {description: Black ink cartridge 2-pack, account: "6100", price: ["38.99", "44.99"], qty: [1, 2], taxable: true}
-      - {description: Shipping label pads, account: "6100", price: ["12.49", "14.99"], qty: [1, 3], taxable: true}
-      - {description: Permanent markers 12-pack, account: "6100", price: ["9.99", "11.49"], qty: [1, 2], taxable: true}
+      - {description: Copy paper letter (case), account: "6100", price: ["42.99", "46.99"], qty: [1, 2], taxable: true, aliases: ["Paper 8.5x11 case", "COPY PAPER LTR CS"]}
+      - {description: Black ink cartridge 2-pack, account: "6100", price: ["38.99", "44.99"], qty: [1, 2], taxable: true, aliases: ["Ink cart black twin pk", "PRINTER INK BLK 2PK"]}
+      - {description: Shipping label pads, account: "6100", price: ["12.49", "14.99"], qty: [1, 3], taxable: true, aliases: ["Label pad shipping", "SHIP LABELS PAD"]}
+      - {description: Permanent markers 12-pack, account: "6100", price: ["9.99", "11.49"], qty: [1, 2], taxable: true, aliases: ["Markers perm 12ct", "MARKER PERM BLK 12"]}
       - {description: Desk organizer, account: "6100", price: ["19.99", "24.99"], qty: [1, 1], taxable: true}
 
   - id: tekmart
@@ -423,9 +427,9 @@ vendors:
     lines: [1, 2]
     credit_note_prob: 0.0
     catalog:
-      - {description: USB-C docking station, account: "6150", price: ["129.99", "179.99"], qty: [1, 2], taxable: true}
+      - {description: USB-C docking station, account: "6150", price: ["129.99", "179.99"], qty: [1, 2], taxable: true, aliases: ["USB-C DOCK", "Dock station usb-c"]}
       - {description: Thermal label printer, account: "6150", price: ["219.99", "279.99"], qty: [1, 1], taxable: true}
-      - {description: 27in monitor, account: "6150", price: ["249.99", "329.99"], qty: [1, 2], taxable: true}
+      - {description: 27in monitor, account: "6150", price: ["249.99", "329.99"], qty: [1, 2], taxable: true, aliases: ["MONITOR 27IN", "Display 27\" LED"]}
       - {description: HDMI cables 3-pack, account: "6100", price: ["18.99", "24.99"], qty: [1, 2], taxable: true}
       - {description: Workstation laptop 16in, account: "6150", price: ["2649.00", "3199.00"], qty: [1, 1], taxable: true, rare: true}
 
@@ -440,7 +444,7 @@ vendors:
     schedule: {every_days: 16, jitter_days: 6}
     lines: [1, 3]
     catalog:
-      - {description: Lunch - team meeting, account: "6550", price: ["42.00", "96.00"], qty: [1, 1], taxable: true}
+      - {description: Lunch - team meeting, account: "6550", price: ["42.00", "96.00"], qty: [1, 1], taxable: true, aliases: ["Team lunch", "Lunch meeting (staff)"]}
       - {description: Coffee and pastries, account: "6550", price: ["14.50", "31.00"], qty: [1, 1], taxable: true}
 
   - id: skyway
@@ -454,7 +458,7 @@ vendors:
     schedule: {every_days: 60, jitter_days: 20}
     lines: [1, 1]
     catalog:
-      - {description: Airfare AUS-SEA round trip (trade show), account: "6500", price: ["289.00", "541.00"], qty: [1, 1]}
+      - {description: Airfare AUS-SEA round trip, account: "6500", price: ["289.00", "541.00"], qty: [1, 1]}
 
   - id: lakeside
     name: Lakeside Inn & Suites
@@ -480,6 +484,44 @@ vendors:
     lines: [1, 1]
     catalog:
       - {description: General liability and inventory coverage - quarterly premium, account: "6600", price: ["612.00", "612.00"], qty: [1, 1], fixed: true}
+
+  # ---------------------------------------------------------------- multi-purpose card vendors
+  - id: metrowholesale
+    name: Metro Wholesale Club
+    address: ["7400 Burnet Rd", "Austin, TX 78757"]
+    state: TX
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "MW{n:08d}"
+    schedule: {every_days: 13, jitter_days: 4}
+    lines: [2, 5]
+    catalog:
+      - {description: Paper towels 12-roll pack, account: "6750", price: ["18.99", "22.99"], qty: [1, 2], taxable: true, aliases: ["PAPER TOWEL 12RL", "Towels, paper (12 rolls)"]}
+      - {description: Disinfecting wipes 3-pack, account: "6750", price: ["11.49", "13.99"], qty: [1, 3], taxable: true, aliases: ["WIPES DISINF 3PK"]}
+      - {description: Coffee pods 100ct, account: "6750", price: ["39.99", "46.99"], qty: [1, 2], taxable: true, aliases: ["K-CUP STYLE PODS 100", "Coffee, single-serve pods x100"]}
+      - {description: Bottled water 40-pack, account: "6750", price: ["5.49", "6.99"], qty: [1, 3], taxable: true}
+      - {description: Stretch wrap film 18in roll, account: "5300", price: ["24.99", "29.99"], qty: [1, 2], taxable: true, aliases: ["STRETCH FILM 18IN", "Pallet wrap roll 18\""]}
+      - {description: Bubble cushioning roll 12in, account: "5300", price: ["19.99", "23.99"], qty: [1, 2], taxable: true, aliases: ["BUBBLE ROLL 12IN X 100FT"]}
+      - {description: Copy paper 10-ream case, account: "6100", price: ["44.99", "49.99"], qty: [1, 1], taxable: true, aliases: ["PAPER COPY CASE 10RM"]}
+      - {description: Folding table 6ft, account: "6150", price: ["59.99", "69.99"], qty: [1, 2], taxable: true, aliases: ["TABLE FOLDING 6FT"]}
+
+  - id: printship
+    name: Parcel & Print Center
+    address: ["2900 W Anderson Ln", "Austin, TX 78757"]
+    state: TX
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "PPC{n:06d}"
+    schedule: {every_days: 15, jitter_days: 5}
+    lines: [1, 3]
+    catalog:
+      - {description: Ground parcel label 3lb, account: "5200", price: ["11.20", "16.80"], qty: [1, 6], aliases: ["SHIP GROUND 3LB", "Parcel postage - ground"]}
+      - {description: Overnight envelope, account: "5200", price: ["28.50", "34.90"], qty: [1, 1], aliases: ["NEXT DAY ENVELOPE"]}
+      - {description: Flyers full color (250), account: "6000", price: ["64.00", "79.00"], qty: [1, 2], taxable: true, aliases: ["COLOR FLYERS 250CT", "Promo flyers, color x250"]}
+      - {description: Business cards (500), account: "6000", price: ["39.00", "45.00"], qty: [1, 1], taxable: true, aliases: ["BUS CARDS 500"]}
+      - {description: Box and packing service, account: "5300", price: ["9.50", "18.00"], qty: [1, 3], taxable: true, aliases: ["PACK SERVICE + BOX"]}
 
 # Vendors that never appear in history; used for first-time-vendor anomalies.
 new_vendors:

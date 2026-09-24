@@ -21,7 +21,12 @@ confidence.
 >   verification, coding signals, routing explanation, audit trail), ledger and knowledge views,
 >   and demo controls
 >
-> The review assistant and the evaluation are in progress; unbuilt parts are marked as planned.
+> - the feedback loop, measured: on vendors first seen after the history, coding goes from 71%
+>   (model only) to 100% once reviewers' confirmations are fed back
+>   ([docs/evaluation.md](docs/evaluation.md))
+>
+> The review assistant and the full evaluation report are in progress; unbuilt parts are marked
+> as planned.
 
 ## How it works
 
@@ -92,6 +97,7 @@ uv run accrueboard datagen                # generate the synthetic dataset into 
 uv run accrueboard seed                   # load the client and 12 months of posted history
 uv run poe dev                            # API on http://localhost:8000
 uv run accrueboard worker                 # process queued documents (needs ANTHROPIC_API_KEY or recordings)
+uv run accrueboard eval learning-curve    # coding accuracy as reviewed documents are fed back
 
 cd ../frontend
 pnpm install

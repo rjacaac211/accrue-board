@@ -1,0 +1,458 @@
+# Synthetic client: a residential remodeling and repair contractor.
+# All names, addresses and numbers are fictional.
+#
+# Compared with the retailer, this client has:
+# - a different chart (job materials, subcontractors, equipment rental, disposal, permits,
+#   work in progress)
+# - lumpier amounts (subcontractor and concrete bills in the thousands), so a higher review
+#   cap and capitalization threshold
+# - one vendor shared with the retailer (Metro Wholesale Club), whose purchases are coded to
+#   different accounts here: the knowledge store and classifier must stay per client.
+
+id: ridgeline
+name: Ridgeline Remodeling Co.
+business: Residential remodeling and repair contractor
+address: ["3150 W Tennessee Ave", "Denver, CO 80219"]
+materiality_cap: "25000.00"
+capitalization_threshold: "5000.00"
+
+periods:
+  history: {start: 2024-12-01, end: 2025-11-30}
+  validation: {start: 2025-12-01, end: 2026-02-28}
+  test: {start: 2026-03-01, end: 2026-08-31}
+
+tax_rates:
+  CO: "0.0881"
+  UT: "0.0725"
+  WY: "0.0400"
+  TX: "0.0825"
+  CA: "0.0725"
+  NY: "0.08875"
+  WA: "0.1025"
+  AZ: "0.0860"
+
+accounts:
+  - {code: "1000", name: Operating Bank, type: asset}
+  - {code: "1300", name: Materials Inventory, type: asset, description: Stock materials held in the yard, bought tax-exempt for resale on jobs}
+  - {code: "1400", name: Prepaid Expenses, type: asset, description: Annual policies and plans paid in advance}
+  - {code: "1450", name: Work in Progress, type: asset, description: Progress billings on unfinished fixed-price jobs}
+  - {code: "1500", name: Equipment & Trailers (Fixed Assets), type: asset, description: Equipment items over the capitalization threshold}
+  - {code: "2000", name: Accounts Payable, type: liability}
+  - {code: "2100", name: Credit Card Clearing, type: liability}
+  - {code: "2200", name: Sales Tax Payable, type: liability}
+  - {code: "3000", name: Owner's Equity, type: equity}
+  - {code: "4000", name: Contract Revenue, type: revenue}
+  - {code: "5000", name: Job Materials, type: expense, description: Materials bought for a specific job and used on site}
+  - {code: "5100", name: Subcontractors, type: expense, description: Trade subcontractors on completed work}
+  - {code: "5200", name: Equipment Rental, type: expense}
+  - {code: "5300", name: Dumpster & Disposal, type: expense, description: Roll-off dumpsters, haul-away and landfill fees}
+  - {code: "5400", name: Permits & Inspections, type: expense}
+  - {code: "6000", name: Advertising & Marketing, type: expense}
+  - {code: "6100", name: Office Supplies, type: expense}
+  - {code: "6150", name: Small Tools & Equipment, type: expense, capitalizable: true, description: Power tools, ladders, trailers and job-site equipment}
+  - {code: "6200", name: Software & Subscriptions, type: expense}
+  - {code: "6300", name: Yard & Shop Rent, type: expense}
+  - {code: "6350", name: Utilities, type: expense}
+  - {code: "6400", name: Vehicle Fuel, type: expense}
+  - {code: "6450", name: Vehicle Repairs & Maintenance, type: expense}
+  - {code: "6500", name: Insurance, type: expense}
+  - {code: "6550", name: Professional Fees, type: expense, description: Accounting and legal services}
+  - {code: "6600", name: Meals & Crew Refreshments, type: expense}
+  - {code: "6800", name: Telephone & Internet, type: expense}
+  - {code: "6900", name: Bank Charges, type: expense}
+
+roles:
+  accounts_payable: "2000"
+  card_clearing: "2100"
+  bank: "1000"
+  inventory: "1300"
+  fixed_assets: "1500"
+
+vendors:
+  # ---------------------------------------------------------------- materials suppliers
+  - id: summitlumber
+    name: Summit Lumber & Building Supply
+    address: ["5600 N Washington St", "Denver, CO 80216"]
+    state: CO
+    layout: classic
+    number_format: "SL-{n:06d}"
+    schedule: {every_days: 9, jitter_days: 3}
+    terms_days: 30
+    lines: [1, 4]
+    shipping: {prob: 0.6, min: "65.00", max: "145.00"}
+    discount: {prob: 0.2, pct_min: 2, pct_max: 5}
+    credit_note_prob: 0.08
+    seasonal: true
+    catalog:
+      - {description: 2x4x8 SPF stud (yard stock), account: "1300", price: ["4.10", "4.95"], qty: [40, 240], aliases: ["STUD 2X4X8 SPF", "Studs, 2x4 8ft SPF"]}
+      - {description: 3/4in plywood sheet 4x8 (yard stock), account: "1300", price: ["46.00", "58.00"], qty: [10, 60], aliases: ["PLY 3/4 4X8 CDX", "Plywood 23/32 4x8"]}
+      - {description: OSB sheathing 7/16 4x8 (yard stock), account: "1300", price: ["14.50", "19.80"], qty: [20, 90], aliases: ["OSB 7/16 4X8"]}
+      - {description: Framing package - delivered to job site, account: "5000", price: ["780.00", "2450.00"], qty: [1, 1], taxable: true, aliases: ["Framing lumber pkg - jobsite delivery"]}
+      - {description: Treated deck boards 5/4x6 - delivered to job, account: "5000", price: ["9.40", "12.20"], qty: [30, 140], taxable: true, aliases: ["DECK BD 5/4X6 TREATED JOBSITE"]}
+
+  - id: frontrangetile
+    name: Front Range Tile & Stone
+    address: ["1880 S Broadway", "Denver, CO 80210"]
+    state: CO
+    layout: modern
+    number_format: "FRT{n:06d}"
+    schedule: {every_days: 16, jitter_days: 4}
+    terms_days: 30
+    lines: [1, 3]
+    shipping: {prob: 0.3, min: "45.00", max: "95.00"}
+    credit_note_prob: 0.1
+    seasonal: true
+    catalog:
+      - {description: Porcelain floor tile 12x24 (sq ft), account: "1300", price: ["3.10", "4.60"], qty: [120, 600], aliases: ["PORC TILE 12X24 SF", "Floor tile, porcelain 12x24 per sf"]}
+      - {description: Subway wall tile 3x6 white (sq ft), account: "1300", price: ["1.90", "2.60"], qty: [80, 400], aliases: ["SUBWAY 3X6 WHT SF"]}
+      - {description: Sanded grout 25lb, account: "1300", price: ["21.00", "26.00"], qty: [4, 24], aliases: ["GROUT SANDED 25LB"]}
+      - {description: Quartz vanity top - special order for job, account: "5000", price: ["420.00", "880.00"], qty: [1, 2], taxable: true, aliases: ["Vanity top quartz (job special order)"]}
+
+  - id: alpineplumb
+    name: Alpine Plumbing Supply
+    address: ["990 W 8th Ave", "Denver, CO 80204"]
+    state: CO
+    layout: compact
+    number_format: "APS-{n:05d}"
+    schedule: {every_days: 12, jitter_days: 3}
+    terms_days: 30
+    lines: [1, 4]
+    shipping: {prob: 0.2, min: "25.00", max: "60.00"}
+    credit_note_prob: 0.07
+    catalog:
+      - {description: PEX-A tubing 1/2in x 100ft (stock), account: "1300", price: ["58.00", "72.00"], qty: [2, 12], aliases: ["PEX-A 1/2 X 100", "Tubing PEX 1/2in 100' coil"]}
+      - {description: Brass fitting assortment (stock), account: "1300", price: ["85.00", "120.00"], qty: [1, 6], aliases: ["FITTING ASST BRASS"]}
+      - {description: 50 gal gas water heater - for job install, account: "5000", price: ["890.00", "1240.00"], qty: [1, 1], taxable: true, aliases: ["WTR HTR 50G GAS - JOB"]}
+      - {description: Kitchen faucet - customer selection, account: "5000", price: ["210.00", "460.00"], qty: [1, 2], taxable: true}
+
+  - id: peakelectric
+    name: Peak Electrical Distributors
+    address: ["4300 Brighton Blvd", "Denver, CO 80216"]
+    state: CO
+    layout: ledger
+    number_format: "PED-{n:06d}"
+    schedule: {every_days: 14, jitter_days: 4}
+    terms_days: 30
+    lines: [1, 4]
+    credit_note_prob: 0.06
+    catalog:
+      - {description: 12/2 NM-B wire 250ft (stock), account: "1300", price: ["96.00", "128.00"], qty: [2, 10], aliases: ["WIRE 12/2 NM-B 250", "Romex 12-2 250 ft"]}
+      - {description: 20A single-pole breakers (stock), account: "1300", price: ["8.40", "11.20"], qty: [10, 40], aliases: ["BKR 20A 1P"]}
+      - {description: LED recessed light kits 6in (stock), account: "1300", price: ["14.00", "19.00"], qty: [12, 60], aliases: ["LED CAN KIT 6IN"]}
+      - {description: 200A panel upgrade kit - for job, account: "5000", price: ["610.00", "890.00"], qty: [1, 1], taxable: true, aliases: ["PANEL 200A UPGRADE KIT (JOB)"]}
+
+  # ---------------------------------------------------------------- subcontractors
+  - id: bluelinedrywall
+    name: Blueline Drywall LLC
+    address: ["2250 S Raritan St", "Denver, CO 80223"]
+    state: CO
+    layout: minimal
+    number_format: "BLD-{n:04d}"
+    schedule: {every_days: 18, jitter_days: 6}
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: Hang and finish drywall - level 4, account: "5100", price: ["2100.00", "7800.00"], qty: [1, 1], aliases: ["Drywall hang/tape/finish L4", "Drywall labor - hang & finish"]}
+      - {description: Texture and patch - repair visit, account: "5100", price: ["380.00", "950.00"], qty: [1, 1]}
+
+  - id: cornerstoneconcrete
+    name: Cornerstone Concrete Works
+    address: ["6700 Downing St", "Denver, CO 80229"]
+    state: CO
+    layout: boxed
+    number_format: "CCW{n:05d}"
+    schedule: {every_days: 34, jitter_days: 10}
+    terms_days: 30
+    lines: [1, 2]
+    credit_note_prob: 0.05
+    catalog:
+      - {description: Concrete flatwork - driveway replacement, account: "5100", price: ["4800.00", "11800.00"], qty: [1, 1], aliases: ["Driveway tear-out and pour"]}
+      - {description: Footings and pier pour, account: "5100", price: ["1900.00", "4600.00"], qty: [1, 1]}
+
+  - id: aspenhvac
+    name: Aspen Heating & Air
+    address: ["1420 W Evans Ave", "Denver, CO 80223"]
+    state: CO
+    layout: classic
+    number_format: "AHA-{n:05d}"
+    schedule: {every_days: 26, jitter_days: 8}
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: HVAC rough-in and final - completed job, account: "5100", price: ["3200.00", "8900.00"], qty: [1, 1], aliases: ["Ductwork + furnace install (complete)"]}
+      - {description: Progress billing 50% - HVAC rough-in (job open), account: "1450", price: ["1600.00", "4400.00"], qty: [1, 1], rare: true, aliases: ["Progress bill - 50% rough-in"]}
+
+  - id: summitroofing
+    name: Summit Peak Roofing
+    address: ["8800 E 40th Ave", "Denver, CO 80207"]
+    state: CO
+    layout: modern
+    number_format: "SPR-{n:05d}"
+    schedule: {every_days: 45, jitter_days: 12}
+    terms_days: 30
+    lines: [1, 1]
+    catalog:
+      - {description: Roof tear-off and reshingle - subcontract, account: "5100", price: ["6400.00", "13900.00"], qty: [1, 1], aliases: ["Reroof - tear off + install"]}
+
+  # ---------------------------------------------------------------- equipment, disposal, permits
+  - id: highcountryrental
+    name: High Country Equipment Rental
+    address: ["5100 Federal Blvd", "Denver, CO 80221"]
+    state: CO
+    layout: compact
+    number_format: "HCR{n:06d}"
+    schedule: {every_days: 11, jitter_days: 4}
+    terms_days: 15
+    lines: [1, 3]
+    catalog:
+      - {description: Mini excavator 1.7t - daily rental, account: "5200", price: ["295.00", "340.00"], qty: [1, 5], aliases: ["MINI EX 1.7T DAY", "Compact excavator rental (day)"]}
+      - {description: Scissor lift 19ft - weekly rental, account: "5200", price: ["310.00", "360.00"], qty: [1, 2], aliases: ["SCISSOR 19FT WEEK"]}
+      - {description: Damage waiver, account: "5200", price: ["28.00", "55.00"], qty: [1, 1], always: true}
+      - {description: Used plate compactor - purchase, account: "6150", price: ["1450.00", "1900.00"], qty: [1, 1], rare: true, taxable: true}
+      - {description: Used enclosed trailer 7x16 - purchase, account: "6150", price: ["6400.00", "8200.00"], qty: [1, 1], rare: true, taxable: true}
+
+  - id: yardside
+    name: Yardside Dumpster & Haul
+    address: ["3600 E 48th Ave", "Denver, CO 80216"]
+    state: CO
+    layout: minimal
+    number_format: "YDH-{n:05d}"
+    schedule: {every_days: 10, jitter_days: 3}
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: 20 yd roll-off - 7 day, account: "5300", price: ["420.00", "495.00"], qty: [1, 1], aliases: ["ROLL-OFF 20YD 7DAY", "Dumpster 20 yard (week)"]}
+      - {description: Overweight landfill fee, account: "5300", price: ["45.00", "180.00"], qty: [1, 1]}
+
+  - id: permitworks
+    name: PermitWorks Expediting
+    address: ["1600 Stout St, Suite 400", "Denver, CO 80202"]
+    state: CO
+    layout: ledger
+    number_format: "PW-{n:05d}"
+    schedule: {every_days: 30, jitter_days: 9}
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: Residential remodel permit fee (pass-through), account: "5400", price: ["380.00", "1450.00"], qty: [1, 1]}
+      - {description: Permit expediting service, account: "5400", price: ["150.00", "150.00"], qty: [1, 1], fixed: true, always: true}
+
+  # ---------------------------------------------------------------- tools
+  - id: toolhaus
+    name: Toolhaus Contractor Supply
+    address: ["7300 E Hampden Ave", "Denver, CO 80231"]
+    state: CO
+    layout: boxed
+    number_format: "TH{n:06d}"
+    schedule: {every_days: 24, jitter_days: 7}
+    terms_days: 30
+    lines: [1, 3]
+    catalog:
+      - {description: 18V drill/driver combo kit, account: "6150", price: ["229.00", "279.00"], qty: [1, 2], taxable: true, aliases: ["COMBO KIT 18V DRILL/DRIVER"]}
+      - {description: Rotary laser level kit, account: "6150", price: ["540.00", "690.00"], qty: [1, 1], taxable: true}
+      - {description: 10in wet tile saw, account: "6150", price: ["980.00", "1420.00"], qty: [1, 1], taxable: true, rare: true}
+      - {description: Saw blades and bits assortment, account: "5000", price: ["60.00", "140.00"], qty: [1, 3], taxable: true, aliases: ["Blades/bits assorted"]}
+
+  # ---------------------------------------------------------------- overhead
+  - id: buildflow
+    name: Buildflow Project Software
+    address: ["530 Walnut St", "Boulder, CO 80302"]
+    state: CO
+    layout: modern
+    number_format: "BF-{n:06d}"
+    schedule: {monthly_day: 4}
+    terms_days: 0
+    lines: [1, 1]
+    catalog:
+      - {description: Project management plan - 5 users (monthly), account: "6200", price: ["149.00", "149.00"], qty: [1, 1], fixed: true}
+      - {description: Project management plan - annual prepaid, account: "1400", price: ["1490.00", "1490.00"], qty: [1, 1], fixed: true, rare: true}
+
+  - id: keystoneins
+    name: Keystone Contractors Insurance
+    address: ["777 Grant St", "Denver, CO 80203"]
+    state: CO
+    layout: classic
+    number_format: "KCI-{n:05d}"
+    schedule: {every_days: 91, jitter_days: 4}
+    terms_days: 30
+    lines: [1, 1]
+    catalog:
+      - {description: General liability - quarterly premium, account: "6500", price: ["1860.00", "1860.00"], qty: [1, 1], fixed: true}
+
+  - id: industrialyard
+    name: Tennessee Ave Industrial Yards
+    address: ["3100 W Tennessee Ave", "Denver, CO 80219"]
+    state: CO
+    layout: ledger
+    number_format: "TIY-{n:04d}"
+    schedule: {monthly_day: 1}
+    terms_days: 5
+    lines: [1, 1]
+    catalog:
+      - {description: Yard and shop lease - monthly, account: "6300", price: ["2750.00", "2750.00"], qty: [1, 1], fixed: true}
+
+  - id: frontrangeenergy
+    name: Front Range Energy
+    address: ["1800 Larimer St", "Denver, CO 80202"]
+    state: CO
+    layout: compact
+    number_format: "{n:010d}"
+    schedule: {monthly_day: 9}
+    terms_days: 21
+    lines: [1, 1]
+    catalog:
+      - {description: Electric and gas service - shop, account: "6350", price: ["210.00", "460.00"], qty: [1, 1]}
+
+  - id: summitwireless
+    name: Summit Wireless
+    address: ["900 16th St", "Denver, CO 80202"]
+    state: CO
+    layout: minimal
+    number_format: "SW{n:07d}"
+    schedule: {monthly_day: 18}
+    terms_days: 14
+    lines: [1, 1]
+    catalog:
+      - {description: Crew phone lines x4 with hotspot (monthly), account: "6800", price: ["220.00", "220.00"], qty: [1, 1], fixed: true}
+
+  - id: ledgerlinecpa
+    name: Ledgerline CPA Group
+    address: ["1225 17th St, Suite 900", "Denver, CO 80202"]
+    state: CO
+    layout: classic
+    number_format: "LCG-{n:04d}"
+    schedule: {every_days: 91, jitter_days: 10}
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: Quarterly bookkeeping review, account: "6550", price: ["950.00", "950.00"], qty: [1, 1], fixed: true, always: true}
+      - {description: Payroll tax filing support, account: "6550", price: ["240.00", "380.00"], qty: [1, 1]}
+
+  - id: homeboard
+    name: Homeboard Local Ads
+    address: ["410 N Akard St", "Dallas, TX 75201"]
+    state: TX
+    layout: modern
+    number_format: "HLA-{n:06d}"
+    schedule: {monthly_day: 6}
+    terms_days: 0
+    lines: [1, 1]
+    catalog:
+      - {description: Neighborhood sponsored listing (monthly), account: "6000", price: ["300.00", "300.00"], qty: [1, 1], fixed: true}
+
+  # ---------------------------------------------------------------- card receipts
+  - id: fueldepot
+    name: Front Range Fuel Depot
+    address: ["2800 W Alameda Ave", "Denver, CO 80219"]
+    state: CO
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "FD{n:07d}"
+    schedule: {every_days: 5, jitter_days: 2}
+    lines: [1, 1]
+    catalog:
+      - {description: Diesel fuel (gallons), account: "6400", price: ["3.79", "4.29"], qty: [18, 34], aliases: ["DIESEL #2", "Fuel - diesel"]}
+      - {description: Unleaded fuel (gallons), account: "6400", price: ["3.29", "3.89"], qty: [12, 24], aliases: ["UNL REG"]}
+
+  - id: quicklube
+    name: Mile High Fleet Service
+    address: ["4500 W Colfax Ave", "Denver, CO 80204"]
+    state: CO
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "MHF{n:06d}"
+    schedule: {every_days: 45, jitter_days: 15}
+    lines: [1, 3]
+    catalog:
+      - {description: Oil change - diesel truck, account: "6450", price: ["119.00", "149.00"], qty: [1, 1], taxable: true, aliases: ["OIL CHG DIESEL"]}
+      - {description: Tire rotation, account: "6450", price: ["39.00", "49.00"], qty: [1, 1], taxable: true}
+      - {description: Brake pads - front axle, account: "6450", price: ["280.00", "360.00"], qty: [1, 1], taxable: true, rare: true}
+
+  - id: trailheadcafe
+    name: Trailhead Cafe
+    address: ["1350 S Federal Blvd", "Denver, CO 80219"]
+    state: CO
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "{n}"
+    schedule: {every_days: 9, jitter_days: 4}
+    lines: [2, 5]
+    catalog:
+      - {description: Breakfast burrito, account: "6600", price: ["8.50", "9.75"], qty: [2, 6], taxable: true, aliases: ["BFST BURRITO"]}
+      - {description: Drip coffee 16oz, account: "6600", price: ["2.75", "3.25"], qty: [2, 6], taxable: true, aliases: ["COFFEE 16OZ"]}
+      - {description: Sandwich box lunch, account: "6600", price: ["11.50", "13.00"], qty: [2, 6], taxable: true}
+
+  - id: cornerhardware
+    name: Cornerstone Hardware
+    address: ["2100 S Sheridan Blvd", "Denver, CO 80227"]
+    state: CO
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "CH{n:07d}"
+    schedule: {every_days: 6, jitter_days: 2}
+    lines: [1, 4]
+    catalog:
+      - {description: Deck screws 3in 5lb box, account: "5000", price: ["34.99", "39.99"], qty: [1, 3], taxable: true, aliases: ["SCREW DECK 3IN 5LB"]}
+      - {description: Silicone caulk 10oz, account: "5000", price: ["6.49", "7.99"], qty: [2, 12], taxable: true, aliases: ["CAULK SILICONE CLR"]}
+      - {description: Construction adhesive 28oz, account: "5000", price: ["8.99", "10.49"], qty: [2, 8], taxable: true, aliases: ["ADHESIVE CONST 28OZ"]}
+      - {description: Extension ladder 24ft, account: "6150", price: ["289.00", "339.00"], qty: [1, 1], taxable: true, rare: true, aliases: ["LADDER EXT 24FT"]}
+
+  # ---------------------------------------------------------------- shared with the retailer
+  # The same wholesale club the retailer uses, coded to this client's own accounts.
+  - id: metrowholesale
+    name: Metro Wholesale Club
+    address: ["10400 E Colfax Ave", "Aurora, CO 80010"]
+    state: CO
+    doc_type: receipt
+    payment_method: card
+    layout: receipt
+    number_format: "MW{n:08d}"
+    schedule: {every_days: 15, jitter_days: 5}
+    lines: [2, 4]
+    catalog:
+      - {description: Bottled water 40-pack, account: "6600", price: ["5.49", "6.99"], qty: [2, 4], taxable: true}
+      - {description: Paper towels 12-roll pack, account: "5000", price: ["18.99", "22.99"], qty: [1, 2], taxable: true, aliases: ["PAPER TOWEL 12RL", "Towels, paper (12 rolls)"]}
+      - {description: Contractor trash bags 42gal, account: "5300", price: ["24.99", "29.99"], qty: [1, 3], taxable: true, aliases: ["BAGS CONTRACTOR 42G"]}
+      - {description: Copy paper 10-ream case, account: "6100", price: ["44.99", "49.99"], qty: [1, 1], taxable: true, aliases: ["PAPER COPY CASE 10RM"]}
+      - {description: Folding table 6ft, account: "6150", price: ["59.99", "69.99"], qty: [1, 2], taxable: true, aliases: ["TABLE FOLDING 6FT"]}
+
+# Vendors that never appear in history; used for first-time-vendor anomalies.
+new_vendors:
+  - id: granitepeak
+    name: Granite Peak Countertops
+    address: ["4800 Jason St", "Denver, CO 80211"]
+    state: CO
+    layout: classic
+    number_format: "GPC-{n:04d}"
+    terms_days: 30
+    lines: [1, 2]
+    catalog:
+      - {description: "Quartz countertops - template, fabricate and install", account: "5100", price: ["2800.00", "6200.00"], qty: [1, 1]}
+      - {description: Undermount sink cutout, account: "5100", price: ["150.00", "250.00"], qty: [1, 2]}
+
+  - id: sunward
+    name: Sunward Solar Electric
+    address: ["2600 Walnut St", "Denver, CO 80205"]
+    state: CO
+    layout: modern
+    number_format: "SSE{n:05d}"
+    terms_days: 15
+    lines: [1, 1]
+    catalog:
+      - {description: Rooftop conduit and inverter prep - subcontract, account: "5100", price: ["1200.00", "2600.00"], qty: [1, 1]}
+
+  - id: rockyscaffold
+    name: Rocky Mountain Scaffold Co.
+    address: ["6200 Broadway", "Denver, CO 80216"]
+    state: CO
+    layout: ledger
+    number_format: "RMS-{n:05d}"
+    terms_days: 15
+    lines: [1, 2]
+    catalog:
+      - {description: Frame scaffold rental - 4 weeks, account: "5200", price: ["640.00", "980.00"], qty: [1, 1]}
+      - {description: Scaffold delivery and pickup, account: "5200", price: ["180.00", "180.00"], qty: [1, 1]}

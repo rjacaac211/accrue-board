@@ -24,9 +24,12 @@ from accrueboard.domain.validation import validate_document
 SEED = 7
 
 
-@pytest.fixture(scope="module")
-def spec() -> ClientSpec:
-    return load_client("fernhill")
+CLIENTS = ("fernhill", "ridgeline")
+
+
+@pytest.fixture(scope="module", params=CLIENTS)
+def spec(request: pytest.FixtureRequest) -> ClientSpec:
+    return load_client(request.param)
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +37,9 @@ def catalog() -> AnomalyCatalog:
     return load_anomaly_catalog()
 
 
-@pytest.fixture(scope="module", params=[SEED, 42, 2026], ids=lambda s: f"seed{s}")
+# Seeds 8 and 34 once produced accidental look-alike bills and a duplicate dated before its
+# source; they stay here as regressions.
+@pytest.fixture(scope="module", params=[SEED, 8, 34, 42, 2026], ids=lambda s: f"seed{s}")
 def records(
     spec: ClientSpec, catalog: AnomalyCatalog, request: pytest.FixtureRequest
 ) -> list[GroundTruth]:
@@ -260,11 +265,11 @@ def test_injected_outliers_stay_under_the_materiality_cap(
         assert r.document.total < spec.materiality_cap
 
 
-def test_tax_on_resale_inventory(records: list[GroundTruth]) -> None:
+def test_tax_on_resale_inventory(records: list[GroundTruth], spec: ClientSpec) -> None:
     for r in with_anomaly(records, "tax_on_resale_inventory"):
         assert r.document.tax > 0
         assert any(
-            line.taxable and code == "1300"
+            line.taxable and code == spec.inventory_account
             for line, code in zip(r.document.lines, r.line_accounts, strict=True)
         )
 

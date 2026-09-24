@@ -119,6 +119,17 @@ browser smoke test runs in CI.
 - The demo clock moves forward.
 - Documents waiting on a person past their time limit are flagged, so nothing gets lost in a
   queue.
+- Unpaid invoices get a due-date badge as their date approaches. Once due, they are escalated
+  to the senior reviewer automatically, and the audit trail says why.
+
+### 8. A second client (optional, 30 s)
+*Do:* switch the client to **Ridgeline Remodeling**.
+
+*Say:*
+- A contractor with a different chart: job materials, subcontractors, equipment rental.
+- It has its own knowledge and its own classifier.
+- It buys at the same wholesale club as the retailer, and the same paper towels are coded to
+  job materials here and to cleaning supplies there.
 
 ### Close (30 s)
 *Say:*

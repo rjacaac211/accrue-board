@@ -39,7 +39,11 @@ uv run accrueboard sample             # one document per layout -> data/sample/ 
 5. **No leakage.** History seeds the knowledge store and is never rendered or evaluated.
    Validation calibrates thresholds. Test is used only for reported numbers.
 
-## The client
+## The clients
+There are two fictional clients. Each has its own chart of accounts, vendors, knowledge store
+and classifier. Nothing learned for one is used for the other.
+
+### Fernhill Home Goods (retail)
 *Fernhill Home Goods LLC* is a fictional online retailer of home goods in Austin, TX. It is on
 accrual basis and pays US sales tax on purchases. All vendor names, addresses and amounts are
 invented.
@@ -64,7 +68,28 @@ invented.
   single rendered file.)
 - **New vendors (3):** appear only in the evaluation splits, as first-time-vendor cases.
 
-## Splits (seed 7)
+### Ridgeline Remodeling (trades)
+*Ridgeline Remodeling Co.* is a fictional residential remodeling and repair contractor in
+Denver, CO. It is set up to stress different things from the retailer:
+- **A construction chart:** Job Materials, Subcontractors, Equipment Rental, Dumpster &
+  Disposal, Permits & Inspections, and Work in Progress for progress billings on unfinished
+  fixed-price jobs. Stock kept in the yard (bought tax-exempt for resale on jobs) is Materials
+  Inventory, so the tax-on-resale check still means something.
+- **Lumpy amounts:** drywall, concrete, HVAC and roofing subcontracts run into the thousands.
+  So the review cap is $25,000, and the capitalization threshold is $5,000 (a used enclosed
+  trailer bought from the rental yard crosses it).
+- **Coding by purpose, not by vendor:** the lumber, tile, plumbing and electrical suppliers sell
+  both yard stock and materials delivered to a specific job. That is why the one-account-per-
+  vendor rule scores lower here (about 79%) than for the retailer (about 90%).
+- **A shared vendor:** both clients buy at Metro Wholesale Club. The retailer books paper towels
+  to Cleaning & Breakroom, the contractor to Job Materials.
+  `tests/integration/test_client_scoping.py` checks that the vendor history, the classifier and
+  the retrieved examples only ever use the right client's own knowledge.
+
+The anomaly catalog is shared. Its sizes (such as the over-materiality amounts) scale with each
+client's own caps.
+
+## Splits (seed 7, Fernhill)
 | Split | Period | Documents | Purpose |
 |---|---|---|---|
 | history | 2024-12 to 2025-11 | 546 | knowledge-store seed (structured only) |

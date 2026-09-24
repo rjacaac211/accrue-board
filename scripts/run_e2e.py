@@ -1,7 +1,7 @@
 """Run the browser smoke test against a real stack, without an API key.
 
 Steps:
-1. Recreate a throwaway database and seed the demo client (hashing embeddings).
+1. Recreate a throwaway database and seed the demo clients (hashing embeddings).
 2. Start the API (serving the built frontend) and a worker, both in offline mode
    (LLM_MODE=oracle: the model is replaced by the synthetic dataset's ground truth).
 3. Run Playwright (frontend/e2e), then stop everything.
@@ -103,9 +103,7 @@ def main() -> int:
         "FRONTEND_DIST": str(FRONTEND / "dist"),
     }
     run(["uv", "run", "python", "-c", RESET], BACKEND, env)
-    if not (ROOT / "data" / "generated" / "fernhill" / "validation.jsonl").is_file():
-        run(["uv", "run", "accrueboard", "datagen"], BACKEND, env)
-    run(["uv", "run", "accrueboard", "seed", "--embedder", "hashing"], BACKEND, env)
+    run(["uv", "run", "accrueboard", "bootstrap"], BACKEND, env)  # every client, if missing
 
     uvicorn = ["uv", "run", "uvicorn", "accrueboard.api.app:create_app", "--factory"]
     api = start([*uvicorn, "--port", str(args.port)], BACKEND, env, logs / "api.log")

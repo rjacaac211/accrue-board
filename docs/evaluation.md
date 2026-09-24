@@ -130,6 +130,27 @@ The same loop is tested end to end on Postgres (`tests/integration/test_feedback
 
 *Run on 2026-09-24 with claude-sonnet-5 for coding and the local bge-small embedding model.*
 
+## Second client: coding baselines
+
+The trades client's coding methods, measured without model calls (`accrueboard eval
+learning-curve --client ridgeline`), on 569 test lines:
+
+| Reviewed docs | Vendor rule | Classifier | kNN |
+|---:|---:|---:|---:|
+| 0 | 79.3% | 99.1% | 98.4% |
+| 153 (all) | 80.3% | 99.8% | 99.1% |
+
+- **The vendor rule is weaker here than for the retailer** (79% against 90%). The contractor's
+  materials suppliers sell both yard stock and materials delivered to a job, which belong in
+  different accounts. The classifier and retrieval read the item's wording and are not fooled.
+- **Feedback works the same way.** On the five test lines from vendors first seen after the
+  history, the classifier goes from 60% to 100% once reviewed documents are fed back.
+- **Why no end-to-end numbers.** A full end-to-end run for this client with real models would
+  cost about the same as the retailer's (see [eval-results.md](eval-results.md)). It has not
+  been run.
+
+*Run on 2026-09-25 with the local bge-small embedding model.*
+
 ## Review assistant: does it recommend the right action?
 
 ```bash

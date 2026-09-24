@@ -1,9 +1,9 @@
 import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Upload } from 'lucide-react'
+import { AlertTriangle, CalendarClock, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { useBoard, useBottlenecks, useStats, useUpload, useUsers } from '@/api/hooks'
-import type { Card } from '@/api/types'
+import type { Card, DueAlert } from '@/api/types'
 import { StateBadge } from '@/components/StateBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,23 +44,50 @@ function StatsStrip({ clientId }: { clientId: string }) {
 
 function BottleneckPanel({ clientId }: { clientId: string }) {
   const { data } = useBottlenecks(clientId)
-  if (!data || (data.alerts.length === 0 && !data.congestion)) return null
+  if (!data || (data.alerts.length === 0 && data.due.length === 0 && !data.congestion)) return null
   const breaches = data.alerts.filter((a) => a.level === 'breach').length
+  const overdue = data.due.filter((a) => a.level === 'breach').length
   return (
     <div
       role="status"
       className={cn(
         'flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-2.5 text-sm',
-        breaches ? 'border-red-200 bg-red-50 text-red-900' : 'border-amber-200 bg-amber-50 text-amber-900',
+        breaches || overdue
+          ? 'border-red-200 bg-red-50 text-red-900'
+          : 'border-amber-200 bg-amber-50 text-amber-900',
       )}
     >
-      <span className="flex items-center gap-1.5 font-medium">
-        <AlertTriangle className="size-4" />
-        {data.alerts.length} task{data.alerts.length === 1 ? '' : 's'} waiting too long
-        {breaches > 0 && ` (${breaches} past the limit)`}
-      </span>
+      {data.alerts.length > 0 && (
+        <span className="flex items-center gap-1.5 font-medium">
+          <AlertTriangle className="size-4" />
+          {data.alerts.length} task{data.alerts.length === 1 ? '' : 's'} waiting too long
+          {breaches > 0 && ` (${breaches} past the limit)`}
+        </span>
+      )}
+      {data.due.length > 0 && (
+        <span className="flex items-center gap-1.5 font-medium">
+          <CalendarClock className="size-4" />
+          {data.due.length} unpaid invoice{data.due.length === 1 ? '' : 's'} near the due date
+          {overdue > 0 && ` (${overdue} due or overdue, escalated to a senior)`}
+        </span>
+      )}
       {data.congestion && <span>{data.congestion.message}</span>}
     </div>
+  )
+}
+
+function DueBadge({ due }: { due: DueAlert }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium',
+        due.level === 'breach' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-900',
+      )}
+      title={`Invoice due ${due.due_date}`}
+    >
+      <CalendarClock className="size-3" />
+      {due.message.replace(/^\w/, (c) => c.toUpperCase())}
+    </span>
   )
 }
 
@@ -84,8 +111,9 @@ function TaskCard({ card, assignee }: { card: Card; assignee?: string }) {
         </div>
         <div className="shrink-0 text-right text-sm font-medium tabular-nums">{formatMoney(card.total)}</div>
       </div>
-      {card.rules.length > 0 && (
+      {(card.rules.length > 0 || card.due) && (
         <div className="mt-2 flex flex-wrap gap-1">
+          {card.due && <DueBadge due={card.due} />}
           {card.rules.slice(0, 3).map((rule) => (
             <span key={rule} className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
               {ruleLabel(rule)}

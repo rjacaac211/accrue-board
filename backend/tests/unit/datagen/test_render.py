@@ -19,9 +19,9 @@ from accrueboard.datagen.spec import (
 from accrueboard.domain.documents import DocumentType
 
 
-@pytest.fixture(scope="module")
-def spec() -> ClientSpec:
-    return load_client("fernhill")
+@pytest.fixture(scope="module", params=["fernhill", "ridgeline"])
+def spec(request: pytest.FixtureRequest) -> ClientSpec:
+    return load_client(request.param)
 
 
 @pytest.fixture(scope="module")

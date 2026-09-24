@@ -93,9 +93,9 @@ class VendorSpec(_Frozen):
     seasonal: bool = False
     catalog: tuple[CatalogItem, ...]
 
-    @property
-    def is_inventory_supplier(self) -> bool:
-        return any(item.account == "1300" for item in self.catalog)
+    def supplies(self, account: str) -> bool:
+        """Whether any catalog item is coded to ``account`` (e.g. the client's inventory)."""
+        return any(item.account == account for item in self.catalog)
 
 
 class ClientSpec(_Frozen):
@@ -141,6 +141,13 @@ class ClientSpec(_Frozen):
         return self
 
     @property
+    def inventory_account(self) -> str:
+        return self.roles[AccountRole.INVENTORY]
+
+    def is_inventory_supplier(self, vendor: "VendorSpec") -> bool:
+        return vendor.supplies(self.inventory_account)
+
+    @property
     def chart(self) -> ChartOfAccounts:
         return ChartOfAccounts(accounts=self.accounts, roles=self.roles)
 
@@ -179,6 +186,14 @@ class AnomalyCatalog(_Frozen):
 def _read_spec(*parts: str) -> object:
     text = resources.files("accrueboard.datagen").joinpath("specs", *parts).read_text("utf-8")
     return yaml.safe_load(text)
+
+
+def client_ids() -> list[str]:
+    """Every synthetic client with a specification."""
+    folder = resources.files("accrueboard.datagen").joinpath("specs", "clients")
+    return sorted(
+        p.name.removesuffix(".yaml") for p in folder.iterdir() if p.name.endswith(".yaml")
+    )
 
 
 def load_client(client_id: str) -> ClientSpec:

@@ -62,21 +62,25 @@ def _seed(args: argparse.Namespace) -> int:
 
 
 def _bootstrap(args: argparse.Namespace) -> int:
-    """Make a fresh installation demo-ready: generate the dataset and seed the client, each
+    """Make a fresh installation demo-ready: generate each client's dataset and seed it, each
     only if missing (safe to run on every start)."""
+    from accrueboard.datagen.spec import client_ids
+
     settings = get_settings()
-    if not (settings.data_dir / "generated" / args.client / "validation.jsonl").is_file():
-        _datagen(argparse.Namespace(client=args.client, seed=args.seed, out=None, no_render=False))
-    return _seed(argparse.Namespace(client=args.client, seed=args.seed, embedder=settings.embedder))
+    for client in args.client or client_ids():
+        if not (settings.data_dir / "generated" / client / "validation.jsonl").is_file():
+            _datagen(argparse.Namespace(client=client, seed=args.seed, out=None, no_render=False))
+        _seed(argparse.Namespace(client=client, seed=args.seed, embedder=settings.embedder))
+    return 0
 
 
 def _processor() -> "Any":
     from accrueboard.agents.review_assistant.service import ReviewAssistant
-    from accrueboard.clock import SystemClock
     from accrueboard.db.session import get_sessionmaker
     from accrueboard.llm.factory import ORACLE, build_llm
     from accrueboard.pipeline.process import PipelineModels, Processor
     from accrueboard.retrieval.embeddings import configured_embedder
+    from accrueboard.services.clock import SharedClock
 
     settings = get_settings()
     models = PipelineModels(
@@ -87,7 +91,8 @@ def _processor() -> "Any":
     )
     embedder = configured_embedder()
     llm = build_llm(settings)
-    clock = SystemClock()
+    # The same clock as the API, so a demo fast-forward moves the workers' time too.
+    clock = SharedClock(get_sessionmaker())
     assistant = (
         ReviewAssistant(llm, settings.model_assistant, embedder, clock)
         if settings.review_assistant and settings.llm_mode != ORACLE
@@ -129,13 +134,25 @@ def _ingest_dataset(args: argparse.Namespace) -> int:
     return 0
 
 
+SLA_SWEEP_SECONDS = 5.0
+"""How often a worker checks due dates and escalates overdue invoices."""
+
+
 def _worker(args: argparse.Namespace) -> int:
     import logging
 
+    from accrueboard.services import sla
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     processor = _processor()
+    swept = float("-inf")
     while True:
         processor.requeue_expired()
+        if time.monotonic() - swept >= SLA_SWEEP_SECONDS:
+            with processor.sessions() as session, session.begin():
+                for task_id in sla.escalate_due(session, processor.clock.now()):
+                    print(f"{task_id}: escalated to a senior reviewer (due date)")
+            swept = time.monotonic()
         outcome = processor.run_once(args.client)
         if outcome is not None:
             print(f"{outcome.task_id}: {outcome.state.value} - {outcome.summary}")
@@ -457,7 +474,9 @@ def main(argv: list[str] | None = None) -> int:
     bootstrap = commands.add_parser(
         "bootstrap", help="generate the dataset and seed the client if missing (idempotent)"
     )
-    bootstrap.add_argument("--client", default="fernhill")
+    bootstrap.add_argument(
+        "--client", action="append", help="only this client (repeatable; default: all)"
+    )
     bootstrap.add_argument("--seed", type=int, default=7)
     bootstrap.set_defaults(handler=_bootstrap)
 

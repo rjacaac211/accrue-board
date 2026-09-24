@@ -33,7 +33,7 @@ from accrueboard.datagen.spec import (
     VendorSpec,
 )
 from accrueboard.domain.documents import DocumentType, ExtractedDocument, LineItem, PaymentMethod
-from accrueboard.domain.duplicates import normalize_document_number
+from accrueboard.domain.duplicates import NEAR_DUPLICATE_WINDOW_DAYS, normalize_document_number
 from accrueboard.domain.money import CENT, ZERO, round_money
 from accrueboard.domain.routing import Rule
 from accrueboard.domain.validation import taxable_base
@@ -122,6 +122,7 @@ class Generator:
         self._make_credit_notes()
         for split in EVAL_SPLITS:
             _Injector(self, split).run()
+        self._break_coincidences()
         self._label_natural_properties()
         return self._finalize()
 
@@ -286,7 +287,7 @@ class Generator:
     def make_bill(self, vendor: VendorSpec, issue: date, split: Split | None = None) -> Draft:
         lines = self.pick_lines(vendor, issue)
         po = None
-        if vendor.is_inventory_supplier and self.rng.random() < 0.6:
+        if self.spec.is_inventory_supplier(vendor) and self.rng.random() < 0.6:
             po = self.bump_po()
         doc, accounts = self.build_doc(vendor, issue, lines, po_number=po)
         return self.draft_for(vendor, doc, accounts, issue, split=split)
@@ -383,6 +384,39 @@ class Generator:
         if len(totals) < 5:
             return None
         return Decimal(str(statistics.median(totals)))
+
+    def _break_coincidences(self) -> None:
+        """Make accidental look-alikes distinct.
+
+        Two unrelated bills from one vendor with the same total a few days apart (two identical
+        fuel fills, say) would look like an unlabelled re-issue. The later one's first unit price
+        is raised a cent at a time until it no longer matches. No randomness is used, so a
+        dataset without such coincidences comes out unchanged.
+        """
+        window = NEAR_DUPLICATE_WINDOW_DAYS
+        reissues = {"near_duplicate", "exact_file_duplicate", "renumbered_duplicate"}
+        bills = sorted((d for d in self.drafts if d.is_bill), key=lambda d: (d.received_at, d.key))
+        for i, draft in enumerate(bills):
+            if draft.split is Split.HISTORY or draft.copy_of is not None:
+                continue
+            if reissues & {a[0] for a in draft.anomalies} or draft.doc.issue_date is None:
+                continue
+
+            earlier = bills[:i]
+            doc = draft.doc
+            rate = self.spec.tax_rates[draft.vendor.state]
+            while _collides(doc, draft.vendor.id, earlier, window):
+                first = doc.lines[0]
+                price = first.unit_price + CENT
+                bumped = first.model_copy(
+                    update={"unit_price": price, "amount": round_money(first.quantity * price)}
+                )
+                doc = _recompute(
+                    doc.model_copy(update={"lines": (bumped, *doc.lines[1:])}),
+                    rate,
+                    print_rate=doc.tax_rate is not None,
+                )
+            draft.doc = doc
 
     def _label_natural_properties(self) -> None:
         cap = self.spec.materiality_cap
@@ -495,6 +529,18 @@ class Generator:
         return records
 
 
+def _collides(doc: ExtractedDocument, vendor_id: str, earlier: list[Draft], window: int) -> bool:
+    """Whether an earlier bill from the vendor has the same total within ``window`` days."""
+    return any(
+        o.vendor.id == vendor_id
+        and o.doc.total == doc.total
+        and o.doc.issue_date is not None
+        and doc.issue_date is not None
+        and abs((doc.issue_date - o.doc.issue_date).days) <= window
+        for o in earlier
+    )
+
+
 def _recompute(doc: ExtractedDocument, rate: Decimal, *, print_rate: bool) -> ExtractedDocument:
     """Recompute subtotal, tax and total after changing lines or taxability."""
     subtotal = sum((i.amount for i in doc.lines), ZERO)
@@ -596,7 +642,7 @@ class _Injector:
             and (not pdf_only or d.file_format == "pdf")
         ]
         if filters.get("inventory"):
-            out = [d for d in out if d.vendor.is_inventory_supplier]
+            out = [d for d in out if self.gen.spec.is_inventory_supplier(d.vendor)]
         if filters.get("invoice"):
             out = [d for d in out if d.doc.doc_type is DocumentType.INVOICE]
         return out
@@ -617,8 +663,10 @@ class _Injector:
         draft.negatives.append((negative_id, rules, related.key if related else None))
 
     def later(self, moment: datetime, lo: int, hi: int) -> datetime:
+        """A moment after ``moment``, kept inside the split unless ``moment`` already isn't."""
         limit = datetime.combine(self.end, time(23, 0), tzinfo=UTC)
-        return min(moment + timedelta(days=self.rng.randint(lo, hi), hours=1), limit)
+        target = min(moment + timedelta(days=self.rng.randint(lo, hi), hours=1), limit)
+        return max(target, moment + timedelta(hours=1))
 
     def replace_doc(self, draft: Draft, doc: ExtractedDocument) -> None:
         draft.doc = doc
@@ -752,7 +800,8 @@ class _Injector:
         pool = [
             d
             for d in self.clean_bills(inventory=True, invoice=True)
-            if self.gen.spec.tax_rates[d.vendor.state] > 0 and all(a == "1300" for a in d.accounts)
+            if self.gen.spec.tax_rates[d.vendor.state] > 0
+            and all(a == self.gen.spec.inventory_account for a in d.accounts)
         ]
         draft = self.take(pool)
         rate = self.gen.spec.tax_rates[draft.vendor.state]
@@ -768,7 +817,9 @@ class _Injector:
     def over_materiality(self) -> None:
         draft = self.take(self.clean_bills(inventory=True, invoice=True))
         cap = self.gen.spec.materiality_cap
-        target = Decimal(self.rng.randint(10_500, 18_000))
+        # 1.05x to 1.8x the cap. Drawn on a 10,000 scale so that datasets generated before
+        # caps varied by client stay identical (their cap is 10,000).
+        target = Decimal(self.rng.randint(10_500, 18_000)) * cap / Decimal(10_000)
         rate = self.gen.spec.tax_rates[draft.vendor.state]
         doc = draft.doc
         for _ in range(20):

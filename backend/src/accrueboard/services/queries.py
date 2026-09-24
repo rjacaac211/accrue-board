@@ -23,12 +23,13 @@ from accrueboard.domain.bottleneck import (
     AgeAlert,
     AlertLevel,
     CongestionAlert,
+    DueAlert,
     TaskAge,
     age_alerts,
     review_congestion,
 )
 from accrueboard.domain.lifecycle import TaskState
-from accrueboard.services import ledger
+from accrueboard.services import ledger, sla
 from accrueboard.services.tasks import audit_trail, verify_chain
 
 REVIEWER_DAILY_CAPACITY = 40
@@ -78,6 +79,8 @@ class Card(BaseModel):
     rules: list[str]
     summary: str | None
     assignee_id: str | None
+    due: DueAlert | None = None
+    """Set when an unpaid invoice waiting on a person is close to or past its due date."""
 
 
 class AuditItem(BaseModel):
@@ -141,6 +144,7 @@ class TaskDetail(BaseModel):
 class Bottlenecks(BaseModel):
     now: datetime
     alerts: list[AgeAlert]
+    due: list[DueAlert]
     congestion: CongestionAlert | None
     counts: dict[str, int]
 
@@ -214,7 +218,13 @@ def _alert_levels(tasks: list[Task], now: datetime) -> dict[str, AlertLevel]:
     return {a.task_id: a.level for a in age_alerts(ages, now=now)}
 
 
-def _card(task: Task, document: Document, now: datetime, alert: AlertLevel | None) -> Card:
+def _card(
+    task: Task,
+    document: Document,
+    now: datetime,
+    alert: AlertLevel | None,
+    due: DueAlert | None = None,
+) -> Card:
     extracted = document.extracted or {}
     routing = task.routing or {}
     return Card(
@@ -233,6 +243,7 @@ def _card(task: Task, document: Document, now: datetime, alert: AlertLevel | Non
         rules=[hit["rule"] for hit in routing.get("hits", [])],
         summary=routing.get("summary"),
         assignee_id=task.assignee_id,
+        due=due,
     )
 
 
@@ -262,7 +273,8 @@ def board(
     ).all()
     rows = [*active, *settled]
     levels = _alert_levels([t for t, _ in rows], now)
-    return [_card(t, d, now, levels.get(t.id)) for t, d in rows]
+    due = {a.task_id: a for a in sla.alerts(session, now, client_id)}
+    return [_card(t, d, now, levels.get(t.id), due.get(t.id)) for t, d in rows]
 
 
 def _entry_view(entry: JournalEntry, names: dict[str, str]) -> EntryView:
@@ -295,6 +307,7 @@ def task_detail(session: Session, task_id: str, now: datetime) -> TaskDetail | N
         return None
     document = task.document
     level = _alert_levels([task], now).get(task.id)
+    due = next((a for a in sla.alerts(session, now, task.client_id) if a.task_id == task.id), None)
     names = _account_names(session, task.client_id)
     calls = (
         session.execute(select(LLMCall).where(LLMCall.task_id == task.id).order_by(LLMCall.id))
@@ -303,7 +316,7 @@ def task_detail(session: Session, task_id: str, now: datetime) -> TaskDetail | N
     )
     intact, _ = verify_chain(session, task.id)
     return TaskDetail(
-        card=_card(task, document, now, level),
+        card=_card(task, document, now, level, due),
         client_id=task.client_id,
         media_type=document.media_type,
         has_file=document.content is not None,
@@ -376,6 +389,7 @@ def bottlenecks(session: Session, client_id: str, now: datetime) -> Bottlenecks:
     return Bottlenecks(
         now=now,
         alerts=list(age_alerts(ages, now=now)),
+        due=list(sla.alerts(session, now, client_id)),
         congestion=review_congestion(
             needs_review_count=counts.get(TaskState.NEEDS_REVIEW.value, 0),
             reviewers=reviewers,

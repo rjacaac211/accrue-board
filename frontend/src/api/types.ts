@@ -37,6 +37,16 @@ export interface AccountSummary {
   role: string | null
 }
 
+// An unpaid invoice waiting on a person, close to or past its due date.
+export interface DueAlert {
+  task_id: string
+  state: TaskState
+  level: AlertLevel
+  due_date: string
+  days_left: number
+  message: string
+}
+
 export interface Card {
   task_id: string
   state: TaskState
@@ -53,6 +63,7 @@ export interface Card {
   rules: string[]
   summary: string | null
   assignee_id: string | null
+  due: DueAlert | null
 }
 
 export interface LineItem {
@@ -242,6 +253,7 @@ export interface AgeAlert {
 export interface Bottlenecks {
   now: string
   alerts: AgeAlert[]
+  due: DueAlert[]
   congestion: { state: string; count: number; capacity: number; message: string } | null
   counts: Record<string, number>
 }

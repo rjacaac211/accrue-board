@@ -11,7 +11,7 @@ confidence.
 
 ## Results
 
-Measured end to end on 307 held-out test documents with real models (Wilson 95% intervals in
+Measured end to end on the retailer's 307 held-out test documents with real models (Wilson 95% intervals in
 brackets). Full report: [docs/eval-results.md](docs/eval-results.md).
 
 | | |
@@ -51,6 +51,12 @@ intake → classify → extract → validate → code → score → route ─┬
   signals that can be verified: whether an extracted value actually appears in the document,
   whether the arithmetic adds up, whether independent coding methods agree, and whether a
   second extraction pass agrees with the first.
+- **Nothing slips through quietly.** The board flags work waiting too long in any stage. An
+  unpaid invoice nearing its due date while it waits on a person is flagged too, and once it
+  is due it is escalated to a senior reviewer, with the reason in the audit trail.
+- **Per client, and tested as such.** Two fictional clients (an online retailer and a
+  remodeling contractor) have their own charts, vendors, knowledge stores and classifiers. A
+  shared vendor is coded differently for each, and a test checks that nothing crosses over.
 - **Measured, not asserted.** An evaluation suite over seeded synthetic data reports:
   - extraction and coding accuracy
   - anomaly precision and recall
@@ -61,8 +67,8 @@ intake → classify → extract → validate → code → score → route ─┬
 
 ## Data
 
-The system is evaluated on a deterministic synthetic dataset for a fictional US online
-retailer:
+The system is evaluated on deterministic synthetic datasets for two fictional US clients: an
+online retailer, and a remodeling contractor with a construction chart of accounts. Each has:
 - 12 months of coded history
 - validation and test splits of rendered PDF invoices, receipts (some as noisy PNG scans),
   credit notes, statements and quotes

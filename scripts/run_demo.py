@@ -1,7 +1,7 @@
 """Start a fresh demo stack with real models, optionally pre-processed and screen-captured.
 
 Steps:
-1. Recreate the demo database and seed the demo client (history plus local embeddings).
+1. Recreate the demo database and seed the demo clients (history plus local embeddings).
 2. Start the API (serving the built frontend, demo controls on) and a worker that calls the
    configured models (LLM_MODE from .env, recorded under data/recordings).
 3. Optionally feed the first documents and wait until the worker and the review assistant are
@@ -92,9 +92,7 @@ def main() -> int:
         "FRONTEND_DIST": str(FRONTEND / "dist"),
     }
     run(["uv", "run", "python", "-c", RESET], BACKEND, env)
-    if not (ROOT / "data" / "generated" / CLIENT / "validation.jsonl").is_file():
-        run(["uv", "run", "accrueboard", "datagen"], BACKEND, env)
-    run(["uv", "run", "accrueboard", "seed"], BACKEND, env)
+    run(["uv", "run", "accrueboard", "bootstrap"], BACKEND, env)  # every client, if missing
 
     uvicorn = ["uv", "run", "uvicorn", "accrueboard.api.app:create_app", "--factory"]
     server = start([*uvicorn, "--port", str(args.port)], BACKEND, env, logs / "api.log")

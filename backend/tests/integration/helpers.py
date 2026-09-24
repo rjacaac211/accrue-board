@@ -66,9 +66,9 @@ class World:
         return task_id
 
 
-def make_world(prefix: str) -> World:
+def make_world(prefix: str, client: str = "fernhill") -> World:
     """A committed, uniquely named client seeded with its history (left in the test DB)."""
-    spec = load_client("fernhill").model_copy(update={"id": f"{prefix}{uuid.uuid4().hex[:8]}"})
+    spec = load_client(client).model_copy(update={"id": f"{prefix}{uuid.uuid4().hex[:8]}"})
     records = generate(spec, load_anomaly_catalog(), 7)
     sessions = sessionmaker(bind=get_engine(), expire_on_commit=False)
     with sessions() as session, session.begin():

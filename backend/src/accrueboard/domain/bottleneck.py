@@ -1,14 +1,15 @@
-"""Bottleneck detection: tasks aging in a stage, and review queues beyond capacity.
+"""Bottleneck detection: tasks aging in a stage, review queues beyond capacity, and unpaid
+invoices whose due date is close while they wait on a person.
 
 The useful signal is how long something has been waiting, not just how many things are
 waiting: one invoice sitting in review for three days matters more than ten that arrived
-this morning. The current time is always passed in, so the demo can fast-forward it and
-tests can pin it.
+this morning, and an invoice due tomorrow matters more than either. The current time is always
+passed in, so the demo can fast-forward it and tests can pin it.
 """
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 from types import MappingProxyType
 
@@ -129,3 +130,95 @@ def review_congestion(
             f"about {capacity} per day"
         ),
     )
+
+
+# ---------------------------------------------------------------------------- due dates
+
+WAITING_ON_PEOPLE = frozenset({TaskState.NEEDS_REVIEW, TaskState.BLOCKED, TaskState.FAILED})
+"""States in which an unpaid invoice can miss its due date because nobody has acted."""
+
+
+@dataclass(frozen=True)
+class DueRule:
+    warn_days: int = 3
+    """Warn when the due date is this many days away or fewer."""
+    breach_days: int = 0
+    """Breach (and escalate) when this many days or fewer are left: 0 means due today."""
+
+    def __post_init__(self) -> None:
+        if self.warn_days < self.breach_days:
+            raise ValueError("warn_days must be at least breach_days")
+
+
+DEFAULT_DUE_RULE = DueRule()
+
+
+class DueItem(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    task_id: str
+    state: TaskState
+    due_date: date
+    as_of: date
+    """Today on the document's clock (see ``document_date``)."""
+
+
+class DueAlert(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    task_id: str
+    state: TaskState
+    level: AlertLevel
+    due_date: date
+    days_left: int
+    message: str
+
+
+def document_date(received_at: datetime, queued_at: datetime, now: datetime) -> date:
+    """Today as the document experiences it: its arrival plus the time since it was queued.
+
+    Normally a document is queued when it arrives, so this is simply today. A replayed or demo
+    document keeps its original arrival date, and its due date is judged by the time that has
+    passed since it entered the queue, not by how old the paper is.
+    """
+    return (received_at + (now - queued_at)).date()
+
+
+def _due_message(days_left: int) -> str:
+    if days_left < 0:
+        late = -days_left
+        return f"overdue by {late} day{'s' if late != 1 else ''}"
+    if days_left == 0:
+        return "due today"
+    return f"due in {days_left} day{'s' if days_left != 1 else ''}"
+
+
+def due_alerts(items: Iterable[DueItem], rule: DueRule = DEFAULT_DUE_RULE) -> tuple[DueAlert, ...]:
+    """Unpaid invoices waiting on a person with a due date close or past, most urgent first."""
+    alerts: list[DueAlert] = []
+    for item in items:
+        if item.state not in WAITING_ON_PEOPLE:
+            continue
+        days_left = (item.due_date - item.as_of).days
+        if days_left <= rule.breach_days:
+            level = AlertLevel.BREACH
+        elif days_left <= rule.warn_days:
+            level = AlertLevel.WARNING
+        else:
+            continue
+        alerts.append(
+            DueAlert(
+                task_id=item.task_id,
+                state=item.state,
+                level=level,
+                due_date=item.due_date,
+                days_left=days_left,
+                message=_due_message(days_left),
+            )
+        )
+    return tuple(sorted(alerts, key=lambda a: (a.days_left, a.task_id)))
+
+
+def needs_escalation(alert: DueAlert, *, assignee_is_senior: bool) -> bool:
+    """A breached due date goes to a senior reviewer, once."""
+    return alert.level is AlertLevel.BREACH and not assignee_is_senior

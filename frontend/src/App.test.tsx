@@ -20,6 +20,7 @@ const card = (overrides: Partial<Card>): Card => ({
   rules: ['first_time_vendor'],
   summary: 'Needs review. First-time vendor.',
   assignee_id: null,
+  due: null,
   ...overrides,
 })
 
@@ -133,6 +134,23 @@ const responses: Record<string, unknown> = {
   '/api/clients/fernhill/board': [
     card({}),
     card({ task_id: 't2', state: 'posted', vendor: 'Boxcraft Packaging Supply', rules: [], alert: null, age_seconds: 60 }),
+    card({
+      task_id: 't3',
+      vendor: 'Cornerstone Concrete Works',
+      rules: ['over_materiality'],
+      age_seconds: 3600,
+      alert: null,
+      total: '8120.00',
+      assignee_id: 'u_jordan',
+      due: {
+        task_id: 't3',
+        state: 'needs_review',
+        level: 'breach',
+        due_date: '2026-03-01',
+        days_left: -1,
+        message: 'overdue by 1 day',
+      },
+    }),
   ],
   '/api/clients/fernhill/stats': {
     counts: { needs_review: 1, posted: 1 },
@@ -147,6 +165,16 @@ const responses: Record<string, unknown> = {
   '/api/clients/fernhill/bottlenecks': {
     now: '2026-03-02T16:00:00Z',
     alerts: [{ task_id: 't1', state: 'needs_review', level: 'warning', age: 'PT30H', limit: 'PT24H', message: 'x' }],
+    due: [
+      {
+        task_id: 't3',
+        state: 'needs_review',
+        level: 'breach',
+        due_date: '2026-03-01',
+        days_left: -1,
+        message: 'overdue by 1 day',
+      },
+    ],
     congestion: null,
     counts: { needs_review: 1 },
   },
@@ -191,6 +219,11 @@ describe('board', () => {
     const done = screen.getByRole('region', { name: 'Done' })
     expect(within(done).getByText('Boxcraft Packaging Supply')).toBeInTheDocument()
     expect(await screen.findByText(/1 task waiting too long/)).toBeInTheDocument()
+    expect(screen.getByText(/1 unpaid invoice near the due date \(1 due or overdue/)).toBeInTheDocument()
+    const late = within(review).getByText('Cornerstone Concrete Works').closest('a')
+    expect(late).not.toBeNull()
+    expect(within(late as HTMLElement).getByText('Overdue by 1 day')).toBeInTheDocument()
+    expect(within(late as HTMLElement).getByText('Jordan')).toBeInTheDocument()
     expect(screen.getByText('50%')).toBeInTheDocument()
   })
 })

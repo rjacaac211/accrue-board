@@ -5,7 +5,7 @@
 |---|---|
 | `db` | Postgres 17 with the `vector` and `pg_trgm` extensions. Holds task state, the ledger, the audit log, the knowledge store and the work queue. |
 | `app` | FastAPI. Serves the REST API, the SSE event stream (`/api/events`), and the built frontend. On start it applies migrations and, on a fresh installation, generates the dataset and seeds the demo client (`accrueboard bootstrap`). |
-| `worker` | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED` and a lease, runs the pipeline, requeues tasks whose lease expired, and runs the review assistant on documents held for review. |
+| `worker` | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED` and a lease, runs the pipeline, requeues tasks whose lease expired, runs the review assistant on documents held for review, and escalates unpaid invoices that reach their due date while waiting on a person (ADR 0008). It uses the same shared clock as the API. |
 
 ## Model modes
 `LLM_MODE` chooses where model answers come from:

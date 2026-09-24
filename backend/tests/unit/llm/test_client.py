@@ -14,14 +14,20 @@ from accrueboard.llm.client import (
     cost_of,
 )
 from accrueboard.llm.types import (
+    AssistantTurn,
     FilePart,
     LLMError,
     LLMRequest,
     RefusalError,
     ReplayMissError,
     TextPart,
+    ToolCall,
+    ToolResult,
+    ToolSpec,
+    ToolUseRequest,
     TruncatedError,
     Usage,
+    UserTurn,
 )
 
 SCHEMA: dict[str, Any] = {
@@ -190,3 +196,110 @@ def test_adapter_rejects_unusable_responses(
     client, _ = stub_client(text, stop_reason)
     with pytest.raises(error):
         AnthropicLLM(client).complete(request())
+
+
+# ------------------------------------------------------------------ tool use
+
+TOOLS = (
+    ToolSpec(name="lookup", description="Look something up.", input_schema=SCHEMA),
+    ToolSpec(name="submit", description="Answer.", input_schema=SCHEMA),
+)
+
+
+def tool_request(force: str | None = None, reply: str = "42") -> ToolUseRequest:
+    return ToolUseRequest(
+        purpose="review_assistant",
+        prompt_version="review-assistant-v1",
+        model="claude-sonnet-5",
+        system="system prompt",
+        turns=(
+            UserTurn(text="the case"),
+            AssistantTurn(
+                text="Checking.", calls=(ToolCall(id="c1", name="lookup", input={"answer": "q"}),)
+            ),
+            UserTurn(results=(ToolResult(call_id="c1", content=reply),)),
+        ),
+        tools=TOOLS,
+        force_tool=force,
+    )
+
+
+def test_tool_request_key_covers_the_conversation() -> None:
+    assert tool_request().key == tool_request().key
+    assert tool_request().key != tool_request(reply="43").key
+    assert tool_request().key != tool_request(force="submit").key
+
+
+def tool_stub(content: list[Any], stop_reason: str = "tool_use") -> tuple[Any, StubMessages]:
+    client, messages = stub_client(None, stop_reason)
+    messages.message.content = content
+    return client, messages
+
+
+def test_adapter_sends_the_conversation_and_parses_tool_calls() -> None:
+    client, messages = tool_stub(
+        [
+            SimpleNamespace(type="text", text="Submitting."),
+            SimpleNamespace(type="tool_use", id="c2", name="submit", input={"answer": "a"}),
+        ]
+    )
+    response = AnthropicLLM(client).use_tools(tool_request())
+    sent = messages.kwargs
+    assert sent["tool_choice"] == {"type": "any"}
+    assert [t["name"] for t in sent["tools"]] == ["lookup", "submit"]
+    assert all(t["strict"] is True for t in sent["tools"])
+    assert sent["tools"][-1]["cache_control"] == {"type": "ephemeral"}
+    assert [m["role"] for m in sent["messages"]] == ["user", "assistant", "user"]
+    assert sent["messages"][1]["content"] == [
+        {"type": "text", "text": "Checking."},
+        {"type": "tool_use", "id": "c1", "name": "lookup", "input": {"answer": "q"}},
+    ]
+    assert sent["messages"][2]["content"] == [
+        {"type": "tool_result", "tool_use_id": "c1", "content": "42", "is_error": False}
+    ]
+    assert "output_config" not in sent
+    assert response.calls == (ToolCall(id="c2", name="submit", input={"answer": "a"}),)
+    assert response.text == "Submitting."
+    assert response.cost_usd == Decimal("0.005400")
+
+    AnthropicLLM(client).use_tools(tool_request(force="submit"))
+    assert messages.kwargs["tool_choice"] == {"type": "tool", "name": "submit"}
+
+
+@pytest.mark.parametrize(
+    ("content", "stop_reason", "error"),
+    [
+        ([], "refusal", RefusalError),
+        ([], "max_tokens", TruncatedError),
+        ([SimpleNamespace(type="text", text="I am done.")], "end_turn", LLMError),
+    ],
+)
+def test_adapter_rejects_turns_without_a_tool_call(
+    content: list[Any], stop_reason: str, error: type[Exception]
+) -> None:
+    client, _ = tool_stub(content, stop_reason)
+    with pytest.raises(error):
+        AnthropicLLM(client).use_tools(tool_request())
+
+
+def test_tool_turns_record_and_replay(tmp_path: Path) -> None:
+    fake = FakeLLM(
+        lambda _: {},
+        tool_handler=lambda _: [ToolCall(id="c9", name="submit", input={"answer": "a"})],
+    )
+    recorder = RecordingLLM(tmp_path, ReplayMode.AUTO, fake)
+    first = recorder.use_tools(tool_request())
+    replay = RecordingLLM(tmp_path, ReplayMode.REPLAY).use_tools(tool_request())
+    assert replay.replayed
+    assert not first.replayed
+    assert replay.calls == first.calls
+    assert len(fake.tool_requests) == 1
+    stored = json.loads(recorder.path_for(tool_request()).read_text())
+    assert stored["request"]["turns"][0]["text"] == "the case"
+    with pytest.raises(ReplayMissError):
+        RecordingLLM(tmp_path, ReplayMode.REPLAY).use_tools(tool_request(reply="other"))
+
+
+def test_fake_without_tool_handler_refuses_tool_turns() -> None:
+    with pytest.raises(LLMError, match="no tool handler"):
+        FakeLLM(lambda _: {}).use_tools(tool_request())

@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     model_extract: str = "claude-sonnet-5"
     model_verify: str = "claude-sonnet-5"
     model_code: str = "claude-sonnet-5"
+    model_assistant: str = "claude-sonnet-5"
+    review_assistant: bool = True
+    """Investigate every document held for review with the review assistant."""
     llm_mode: str = "auto"
     """Record/replay mode: live, record, replay or auto (see accrueboard.llm.client)."""
     recordings_dir: Path = Path(__file__).resolve().parents[3] / "data" / "recordings"

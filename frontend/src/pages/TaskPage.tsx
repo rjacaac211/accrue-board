@@ -27,6 +27,7 @@ import {
   ruleLabel,
 } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { AssistantCard } from './AssistantCard'
 import { useSession } from '@/state/session-context'
 import {
   CHECK_LABELS,
@@ -599,43 +600,52 @@ function TaskView({ detail }: { detail: TaskDetail }) {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <DocumentViewer task={detail} />
-        <div className="rounded-xl border bg-background p-4">
-          <Tabs defaultValue={detail.card.state === 'needs_review' ? 'review' : 'why'}>
-            <TabsList>
-              <TabsTrigger value="review">Document</TabsTrigger>
-              <TabsTrigger value="why">Why</TabsTrigger>
-              <TabsTrigger value="audit">Audit trail</TabsTrigger>
-              <TabsTrigger value="ledger">Ledger</TabsTrigger>
-              <TabsTrigger value="calls">Model calls</TabsTrigger>
-            </TabsList>
-            <TabsContent value="review" className="pt-4">
-              {draft ? (
-                <ReviewPanel
-                  task={detail}
-                  accounts={accounts.data ?? []}
-                  draft={draft}
-                  setDraft={setDraft}
-                  lineAccounts={lineAccounts}
-                  setLineAccounts={setLineAccounts}
-                  editable={editable}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">Not extracted yet.</p>
-              )}
-            </TabsContent>
-            <TabsContent value="why" className="pt-4">
-              <WhyPanel task={detail} />
-            </TabsContent>
-            <TabsContent value="audit" className="pt-4">
-              <AuditPanel task={detail} names={names} />
-            </TabsContent>
-            <TabsContent value="ledger" className="pt-4">
-              <LedgerPanel task={detail} />
-            </TabsContent>
-            <TabsContent value="calls" className="pt-4">
-              <CallsPanel task={detail} />
-            </TabsContent>
-          </Tabs>
+        <div className="min-w-0 space-y-4">
+          <AssistantCard
+            task={detail}
+            accounts={accounts.data ?? []}
+            lineAccounts={lineAccounts}
+            setLineAccounts={setLineAccounts}
+            editable={editable}
+          />
+          <div className="rounded-xl border bg-background p-4">
+            <Tabs defaultValue={detail.card.state === 'needs_review' ? 'review' : 'why'}>
+              <TabsList>
+                <TabsTrigger value="review">Document</TabsTrigger>
+                <TabsTrigger value="why">Why</TabsTrigger>
+                <TabsTrigger value="audit">Audit trail</TabsTrigger>
+                <TabsTrigger value="ledger">Ledger</TabsTrigger>
+                <TabsTrigger value="calls">Model calls</TabsTrigger>
+              </TabsList>
+              <TabsContent value="review" className="pt-4">
+                {draft ? (
+                  <ReviewPanel
+                    task={detail}
+                    accounts={accounts.data ?? []}
+                    draft={draft}
+                    setDraft={setDraft}
+                    lineAccounts={lineAccounts}
+                    setLineAccounts={setLineAccounts}
+                    editable={editable}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not extracted yet.</p>
+                )}
+              </TabsContent>
+              <TabsContent value="why" className="pt-4">
+                <WhyPanel task={detail} />
+              </TabsContent>
+              <TabsContent value="audit" className="pt-4">
+                <AuditPanel task={detail} names={names} />
+              </TabsContent>
+              <TabsContent value="ledger" className="pt-4">
+                <LedgerPanel task={detail} />
+              </TabsContent>
+              <TabsContent value="calls" className="pt-4">
+                <CallsPanel task={detail} />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>

@@ -7,11 +7,16 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from accrueboard.api.deps import get_clock, get_embedder, get_session
+from accrueboard.agents.review_assistant.service import (
+    AssistantRun,
+    AssistantUnavailableError,
+    ReviewAssistant,
+)
+from accrueboard.api.deps import get_assistant, get_clock, get_embedder, get_session
 from accrueboard.config import get_settings
 from accrueboard.datagen.spec import Split
 from accrueboard.datagen.writer import read_records
-from accrueboard.db.models import Client, Document
+from accrueboard.db.models import Client, Document, Task
 from accrueboard.domain.documents import ExtractedDocument
 from accrueboard.pipeline.files import SourceFile, UnsupportedFileError
 from accrueboard.pipeline.process import ingest
@@ -24,6 +29,7 @@ router = APIRouter(prefix="/api")
 
 SessionDep = Annotated[Session, Depends(get_session)]
 ClockDep = Annotated[SharedClock, Depends(get_clock)]
+AssistantDep = Annotated[ReviewAssistant, Depends(get_assistant)]
 
 
 def _client(session: Session, client_id: str) -> Client:
@@ -195,7 +201,19 @@ def assign(task_id: str, body: AssignRequest, session: SessionDep, clock: ClockD
     return _result(result)
 
 
-# Declared after /assign so the specific route wins.
+@router.post("/tasks/{task_id}/assistant")
+def run_assistant(task_id: str, session: SessionDep, assistant: AssistantDep) -> AssistantRun:
+    """Investigate a held task with the review assistant (suggest-only) and store the result."""
+    try:
+        with session.begin():
+            if session.get(Task, task_id) is None:
+                raise HTTPException(404, f"unknown task {task_id}")
+            return assistant.run(session, task_id)
+    except AssistantUnavailableError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+# Declared after /assign and /assistant so the specific routes win.
 SimpleAction = Literal["reject", "block", "unblock", "reopen", "retry"]
 _SIMPLE = {
     "reject": review.reject,

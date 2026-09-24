@@ -22,6 +22,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       LLM_MODE: ${LLM_MODE:-auto}
       DEMO_MODE: ${DEMO_MODE:-true}
+      REVIEW_ASSISTANT: ${REVIEW_ASSISTANT:-true}
     volumes:
       - ./data:/app/data
     depends_on:

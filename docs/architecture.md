@@ -5,7 +5,7 @@
 |---|---|
 | `db` | Postgres 17 with the `vector` and `pg_trgm` extensions. Holds task state, the ledger, the audit log, the knowledge store and the work queue. |
 | `app` | FastAPI. Serves the REST API, the SSE event stream (`/api/events`), and the built frontend. |
-| `worker` | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED` and a lease, runs the pipeline, and requeues tasks whose lease expired. |
+| `worker` | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED` and a lease, runs the pipeline, requeues tasks whose lease expired, and runs the review assistant on documents held for review. |
 
 ## Task lifecycle
 ```
@@ -40,10 +40,14 @@ Posted → reopen: a reversing journal entry is posted, then → NeedsReview
    3. Soft signals, such as a possible near-duplicate, reduce it further.
 7. **Route.** Items at or above a calibrated threshold auto-post; the rest go to review.
 8. **Post** a balanced double-entry journal entry (accrual basis).
+9. **Investigate.** A document held for review is investigated by the review assistant, a
+   LangGraph agent with read-only tools. It recommends approve, reject or hold, with an account
+   per line and the evidence it found. It only suggests: a person decides.
 
 See [ADR 0001](adr/0001-fixed-workflow-plus-review-agent.md) for why the pipeline is a fixed
 workflow and only review assistance is an agent, and
 [ADR 0004](adr/0004-database-enforced-integrity.md) for the integrity rules enforced by Postgres.
+[ADR 0006](adr/0006-review-assistant.md) describes the review assistant.
 
 ## API
 | Endpoint | Purpose |
@@ -52,6 +56,7 @@ workflow and only review assistance is an agent, and
 | `GET /api/tasks/{id}` | Everything about one task: extraction checks, coding signals, routing decision, audit trail (with chain check), journal entries, model calls and cost |
 | `GET /api/tasks/{id}/file` | The original document |
 | `POST /api/tasks/{id}/approve` | Approve, optionally with a corrected document or accounts; posts and feeds the knowledge store |
+| `POST /api/tasks/{id}/assistant` | Run the review assistant on a held task (suggest-only) and store its recommendation |
 | `POST /api/tasks/{id}/{reject,block,unblock,reopen,retry,assign}` | Other review actions (reject, block and reopen need a reason) |
 | `GET /api/clients/{id}/bottlenecks` | Age-in-stage alerts and review congestion at the current (shared) time |
 | `GET /api/clients/{id}/ledger`, `/knowledge`, `/stats` | Journal and trial balance, knowledge entries, processing statistics |

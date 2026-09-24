@@ -62,6 +62,7 @@ def _seed(args: argparse.Namespace) -> int:
 
 
 def _processor() -> "Any":
+    from accrueboard.agents.review_assistant.service import ReviewAssistant
     from accrueboard.clock import SystemClock
     from accrueboard.db.session import get_sessionmaker
     from accrueboard.llm.factory import build_llm
@@ -76,7 +77,14 @@ def _processor() -> "Any":
         code=settings.model_code,
     )
     embedder = FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
-    return Processor(get_sessionmaker(), build_llm(settings), models, embedder, SystemClock())
+    llm = build_llm(settings)
+    clock = SystemClock()
+    assistant = (
+        ReviewAssistant(llm, settings.model_assistant, embedder, clock)
+        if settings.review_assistant
+        else None
+    )
+    return Processor(get_sessionmaker(), llm, models, embedder, clock, assistant=assistant)
 
 
 def _ingest(args: argparse.Namespace) -> int:
@@ -172,6 +180,93 @@ def _learning_curve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _review_assistant_eval(args: argparse.Namespace) -> int:
+    from accrueboard.datagen.generate import generate
+    from accrueboard.datagen.spec import Split, load_anomaly_catalog, load_client
+    from accrueboard.db.scratch import fresh_database, scratch_url
+    from accrueboard.db.session import get_sessionmaker
+    from accrueboard.eval.review_assistant import evaluate, summarize, to_markdown, write_report
+    from accrueboard.llm.factory import build_llm
+    from accrueboard.retrieval.embeddings import FastEmbedder, HashingEmbedder
+
+    settings = get_settings()
+    spec = load_client(args.client)
+    records = generate(spec, load_anomaly_catalog(), args.seed)
+    embedder = (
+        HashingEmbedder(dimensions=384)
+        if args.embedder == "hashing"
+        else FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
+    )
+    llm = build_llm(settings)
+    url = scratch_url("eval")
+    print(f"evaluating in a fresh database ({url.rsplit('/', 1)[-1]})")
+    with fresh_database(url):
+        cases = evaluate(
+            records,
+            spec,
+            get_sessionmaker(),
+            llm=llm,
+            model=settings.model_assistant,
+            embedder=embedder,
+            split=Split(args.split),
+            limit=args.limit,
+        )
+    out = Path(args.out) if args.out else settings.data_dir / "eval"
+    meta = {
+        "client": spec.id,
+        "seed": args.seed,
+        "split": args.split,
+        "limit": args.limit,
+        "embedder": args.embedder,
+        "model": settings.model_assistant,
+    }
+    path = write_report(cases, out, meta=meta)
+    print(to_markdown(summarize(cases)))
+    print(f"wrote {path}")
+    return 0
+
+
+def _add_eval_commands(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    evaluate = commands.add_parser("eval", help="evaluation experiments")
+    experiments = evaluate.add_subparsers(dest="experiment", required=True)
+    curve = experiments.add_parser(
+        "learning-curve", help="coding accuracy as reviewed documents are fed back"
+    )
+    curve.add_argument("--client", default="fernhill")
+    curve.add_argument("--seed", type=int, default=7)
+    curve.add_argument(
+        "--steps",
+        default="0,50,100,all",
+        help="numbers of reviewed documents to feed back, comma separated ('all' = every one)",
+    )
+    curve.add_argument(
+        "--with-model",
+        action="store_true",
+        help="also evaluate the full cascade (calls or replays the model)",
+    )
+    curve.add_argument("--test-limit", type=int, help="evaluate only the first N test documents")
+    curve.add_argument(
+        "--new-vendors-only",
+        action="store_true",
+        help="evaluate only test documents from vendors absent from the history",
+    )
+    curve.add_argument("--embedder", choices=["fast", "hashing"], default="fast")
+    curve.add_argument("--out", help="output directory (default: <data_dir>/eval)")
+    curve.set_defaults(handler=_learning_curve)
+
+    assistant = experiments.add_parser(
+        "review-assistant",
+        help="how often the review assistant recommends the right action (calls the model)",
+    )
+    assistant.add_argument("--client", default="fernhill")
+    assistant.add_argument("--seed", type=int, default=7)
+    assistant.add_argument("--split", choices=["validation", "test"], default="validation")
+    assistant.add_argument("--limit", type=int, help="stop after this many held documents")
+    assistant.add_argument("--embedder", choices=["fast", "hashing"], default="fast")
+    assistant.add_argument("--out", help="output directory (default: <data_dir>/eval)")
+    assistant.set_defaults(handler=_review_assistant_eval)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="accrueboard", description=__doc__)
     parser.add_argument("--version", action="version", version=f"accrueboard {__version__}")
@@ -220,32 +315,7 @@ def main(argv: list[str] | None = None) -> int:
     worker.add_argument("--poll", type=float, default=2.0, help="seconds between queue checks")
     worker.set_defaults(handler=_worker)
 
-    evaluate = commands.add_parser("eval", help="evaluation experiments")
-    experiments = evaluate.add_subparsers(dest="experiment", required=True)
-    curve = experiments.add_parser(
-        "learning-curve", help="coding accuracy as reviewed documents are fed back"
-    )
-    curve.add_argument("--client", default="fernhill")
-    curve.add_argument("--seed", type=int, default=7)
-    curve.add_argument(
-        "--steps",
-        default="0,50,100,all",
-        help="numbers of reviewed documents to feed back, comma separated ('all' = every one)",
-    )
-    curve.add_argument(
-        "--with-model",
-        action="store_true",
-        help="also evaluate the full cascade (calls or replays the model)",
-    )
-    curve.add_argument("--test-limit", type=int, help="evaluate only the first N test documents")
-    curve.add_argument(
-        "--new-vendors-only",
-        action="store_true",
-        help="evaluate only test documents from vendors absent from the history",
-    )
-    curve.add_argument("--embedder", choices=["fast", "hashing"], default="fast")
-    curve.add_argument("--out", help="output directory (default: <data_dir>/eval)")
-    curve.set_defaults(handler=_learning_curve)
+    _add_eval_commands(commands)
 
     args = parser.parse_args(argv)
     if not hasattr(args, "handler"):

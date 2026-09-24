@@ -1,14 +1,14 @@
 """Build the configured LLM client (record/replay around the Anthropic API)."""
 
 from accrueboard.config import Settings
-from accrueboard.llm.client import AnthropicLLM, LLMClient, RecordingLLM, ReplayMode
+from accrueboard.llm.client import AnthropicLLM, ModelClient, RecordingLLM, ReplayMode
 
 
 class MissingCredentialsError(RuntimeError):
     pass
 
 
-def build_llm(settings: Settings) -> LLMClient:
+def build_llm(settings: Settings) -> ModelClient:
     mode = ReplayMode(settings.llm_mode)
     if mode is ReplayMode.REPLAY:
         return RecordingLLM(settings.recordings_dir, mode)

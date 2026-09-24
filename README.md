@@ -9,6 +9,8 @@ it has been sitting there, and a full audit trail of what happened and why. Revi
 flow back into a per-client knowledge store, so the next similar document is coded with more
 confidence.
 
+![Documents arrive and move across the live board; a re-sent invoice is held, and the review assistant explains why it is a duplicate](docs/images/demo.gif)
+
 ## Results
 
 Measured end to end on the retailer's 307 held-out test documents with real models (Wilson 95% intervals in
@@ -31,6 +33,15 @@ brackets). Full report: [docs/eval-results.md](docs/eval-results.md).
 - The data is synthetic, so the numbers show the mechanism works, not how it would do on a
   real client's paperwork. See [Scope](#scope) and [docs/evaluation.md](docs/evaluation.md).
   The evaluation also caught a real bookkeeping bug before any number was reported.
+
+## Screenshots
+
+| Live board | Review with the assistant | Ledger |
+|---|---|---|
+| [![The work board: documents by stage, with stats and the reasons each held document needs a person](docs/images/board.png)](docs/images/board.png) | [![Reviewing a held invoice: the document, the review assistant's recommendation with evidence, and the routing explanation](docs/images/review-assistant.png)](docs/images/review-assistant.png) | [![The ledger: trial balance and recent double-entry journal entries](docs/images/ledger.png)](docs/images/ledger.png) |
+| Every document from arrival to the ledger, with why each held one needs a person | A re-sent invoice: the assistant compared it with the original and recommends rejecting it, citing its evidence | Balanced double-entry postings and a trial balance checked at commit |
+
+For a guided tour of the whole flow, follow the demo script in [docs/demo.md](docs/demo.md).
 
 ## How it works
 

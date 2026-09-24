@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 
+from accrueboard import __version__
 from accrueboard.api import app as app_module
 
 
@@ -23,7 +24,7 @@ def test_health_reports_database_unavailable(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(app_module, "get_engine", BrokenEngine)
     response = TestClient(app_module.create_app()).get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "version": "0.1.0", "database": "unavailable"}
+    assert response.json() == {"status": "ok", "version": __version__, "database": "unavailable"}
 
 
 def test_frontend_routes_fall_back_to_index(

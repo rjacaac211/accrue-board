@@ -42,4 +42,5 @@ Posted → reopen: a reversing journal entry is posted, then → NeedsReview
 8. **Post** a balanced double-entry journal entry (accrual basis).
 
 See [ADR 0001](adr/0001-fixed-workflow-plus-review-agent.md) for why the pipeline is a fixed
-workflow and only review assistance is an agent.
+workflow and only review assistance is an agent, and
+[ADR 0004](adr/0004-database-enforced-integrity.md) for the integrity rules enforced by Postgres.

@@ -32,6 +32,34 @@ def _sample(args: argparse.Namespace) -> int:
     return 0
 
 
+def _seed(args: argparse.Namespace) -> int:
+    from accrueboard.clock import SystemClock
+    from accrueboard.datagen.generate import generate
+    from accrueboard.datagen.spec import load_anomaly_catalog, load_client
+    from accrueboard.db.session import get_sessionmaker
+    from accrueboard.retrieval.embeddings import FastEmbedder, HashingEmbedder
+    from accrueboard.services.seed import seed_client
+
+    settings = get_settings()
+    spec = load_client(args.client)
+    records = generate(spec, load_anomaly_catalog(), args.seed)
+    embedder = (
+        HashingEmbedder(dimensions=384)
+        if args.embedder == "hashing"
+        else FastEmbedder(settings.embedding_model, cache_dir=str(settings.embedding_cache_dir))
+    )
+    with get_sessionmaker()() as session, session.begin():
+        summary = seed_client(session, spec, records, embedder, now=SystemClock().now())
+    if not summary.created:
+        print(f"client {summary.client_id} already exists; nothing to do")
+    else:
+        print(
+            f"seeded {summary.client_id}: {summary.documents} posted history documents, "
+            f"{summary.knowledge_entries} knowledge entries, {summary.posted_total} posted"
+        )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="accrueboard", description=__doc__)
     parser.add_argument("--version", action="version", version=f"accrueboard {__version__}")
@@ -49,6 +77,17 @@ def main(argv: list[str] | None = None) -> int:
     sample.add_argument("--seed", type=int, default=7)
     sample.add_argument("--out", help="output directory (default: <data_dir>/sample)")
     sample.set_defaults(handler=_sample)
+
+    seed = commands.add_parser("seed", help="load a client and its coded history into the database")
+    seed.add_argument("--client", default="fernhill")
+    seed.add_argument("--seed", type=int, default=7)
+    seed.add_argument(
+        "--embedder",
+        choices=["fast", "hashing"],
+        default="fast",
+        help="fast = local ONNX model (default); hashing = dependency-free, for tests",
+    )
+    seed.set_defaults(handler=_seed)
 
     args = parser.parse_args(argv)
     if not hasattr(args, "handler"):

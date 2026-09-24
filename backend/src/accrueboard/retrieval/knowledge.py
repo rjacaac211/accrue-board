@@ -6,7 +6,7 @@ unreviewed guesses, so the store cannot reinforce its own mistakes.
 
 import math
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
 from dataclasses import dataclass, field
 from decimal import Decimal
 from difflib import SequenceMatcher
@@ -96,9 +96,11 @@ class _Bm25:
         return scores
 
 
-def reciprocal_rank_fusion(rankings: Sequence[Sequence[int]], k: int = RRF_K) -> dict[int, float]:
-    """Merge ranked lists of item indexes: each item scores sum(1 / (k + rank))."""
-    fused: dict[int, float] = defaultdict(float)
+def reciprocal_rank_fusion[T: Hashable](
+    rankings: Sequence[Sequence[T]], k: int = RRF_K
+) -> dict[T, float]:
+    """Merge ranked lists of items: each item scores sum(1 / (k + rank))."""
+    fused: dict[T, float] = defaultdict(float)
     for ranking in rankings:
         for rank, item in enumerate(ranking, start=1):
             fused[item] += 1.0 / (k + rank)

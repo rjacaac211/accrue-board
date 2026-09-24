@@ -14,14 +14,15 @@ Guidance for AI coding assistants working in this repository.
 - Commits use Conventional Commits (`feat(pipeline): …`, `fix(ledger): …`, `test(domain): …`).
   The only trailer is `Co-Authored-By: Claude …`. Do not add session links or "generated with"
   footers.
-- Work happens on one branch and one PR per milestone. Commit or push only when the maintainer
-  asks.
+- Work happens on one branch and one PR per milestone (merge commits, not squash). Merge only
+  after the full local gate, the integration tests and CI all pass.
 
 ## Layout
 - `backend/src/accrueboard/domain/`: **pure** domain logic (money, validation, journal,
   anomalies, scoring, routing, lifecycle). No IO, no clock, no network. Pyright strict.
-- `backend/src/accrueboard/{pipeline,llm,retrieval,agents,db,api,datagen,eval}`: the adapters
-  and services around the domain.
+- `backend/src/accrueboard/{pipeline,llm,retrieval,services,agents,db,api,datagen,eval}`: the
+  adapters and services around the domain. `services/` owns database-backed operations (task
+  transitions with audit, ledger posting, seeding).
 - `frontend/`: React + Vite + TypeScript single-page app, served by FastAPI in production.
 - `docs/adr/`: architecture decision records. Add one for any significant design choice.
 
@@ -47,3 +48,5 @@ Guidance for AI coding assistants working in this repository.
 - Unit tests never call an LLM. LLM paths use fakes, or recorded responses replayed from
   `tests/fixtures/llm_recordings/`.
 - Tests that need Postgres are marked `@pytest.mark.integration`.
+- The audit log and ledger are append-only in the database. Integration tests run inside a
+  rolled-back transaction and use a unique client id; never try to delete audit or ledger rows.

@@ -58,6 +58,7 @@ jobs:
       - run: uv run ruff check . ../scripts
       - run: uv run pyright
       - run: uv run alembic -c src/accrueboard/db/alembic.ini upgrade head
+      - run: uv run alembic -c src/accrueboard/db/alembic.ini check
       - run: uv run pytest --cov --cov-report=term-missing
 
   frontend:

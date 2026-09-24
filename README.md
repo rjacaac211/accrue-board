@@ -82,6 +82,7 @@ cd backend
 uv sync
 uv run poe migrate                        # apply database migrations
 uv run accrueboard datagen                # generate the synthetic dataset into data/generated
+uv run accrueboard seed                   # load the client and 12 months of posted history
 uv run poe dev                            # API on http://localhost:8000
 
 cd ../frontend

@@ -22,22 +22,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from accrueboard.clock import Clock
-from accrueboard.db.models import Account, Client, Document, LLMCall, Task
-from accrueboard.domain.accounts import Account as DomainAccount
-from accrueboard.domain.accounts import AccountRole, AccountType, ChartOfAccounts
+from accrueboard.db.models import Client, Document, LLMCall, Task
+from accrueboard.domain.accounts import AccountRole
 from accrueboard.domain.capitalization import (
-    DEFAULT_CAPITALIZATION_THRESHOLD,
     apply_capitalization,
 )
 from accrueboard.domain.documents import DocumentType, ExtractedDocument
 from accrueboard.domain.duplicates import Fingerprint, find_duplicates
 from accrueboard.domain.journal import PostingError, build_entry
 from accrueboard.domain.lifecycle import Actor, TaskState
-from accrueboard.domain.money import money
 from accrueboard.domain.outliers import OutlierAssessment, assess_amount
 from accrueboard.domain.routing import (
     Outcome,
-    RoutingConfig,
     RoutingDecision,
     RoutingInput,
     decide,
@@ -56,6 +52,7 @@ from accrueboard.pipeline.files import SourceFile
 from accrueboard.retrieval.embeddings import Embedder
 from accrueboard.retrieval.pg_store import PgKnowledgeStore
 from accrueboard.services import ledger
+from accrueboard.services.clients import capitalization_threshold, load_chart, routing_config
 from accrueboard.services.seed import fingerprint_columns
 from accrueboard.services.tasks import create_task, new_id, transition
 
@@ -114,38 +111,6 @@ def ingest(
     session.add(document)
     session.flush()
     return create_task(session, document, now=received_at)
-
-
-# ---------------------------------------------------------------------------- client context
-
-
-def load_chart(session: Session, client_id: str) -> ChartOfAccounts:
-    rows = session.execute(
-        select(Account).where(Account.client_id == client_id).order_by(Account.code)
-    ).scalars()
-    accounts: list[DomainAccount] = []
-    roles: dict[AccountRole, str] = {}
-    for row in rows:
-        accounts.append(
-            DomainAccount(
-                code=row.code,
-                name=row.name,
-                type=AccountType(row.type),
-                description=row.description,
-                capitalizable=row.capitalizable,
-            )
-        )
-        if row.role:
-            roles[AccountRole(row.role)] = row.code
-    return ChartOfAccounts(accounts=tuple(accounts), roles=roles)
-
-
-def routing_config(client: Client) -> RoutingConfig:
-    config = client.config or {}
-    return RoutingConfig(
-        auto_post_threshold=float(config.get("auto_post_threshold", 0.9)),
-        materiality_cap=money(config.get("materiality_cap", "10000.00")),
-    )
 
 
 # ---------------------------------------------------------------------------- history lookups
@@ -376,11 +341,7 @@ class Processor:
             coding = self._coder(session, context).code(doc)
             if coding.call is not None:
                 calls.append(coding.call)
-            threshold = money(
-                (client.config or {}).get(
-                    "capitalization_threshold", str(DEFAULT_CAPITALIZATION_THRESHOLD)
-                )
-            )
+            threshold = capitalization_threshold(client)
             accounts, events = apply_capitalization(
                 doc, coding.accounts, chart, threshold=threshold
             )

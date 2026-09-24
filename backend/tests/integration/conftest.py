@@ -5,16 +5,57 @@ needs a client gets one with a unique id, so tests never collide with each other
 seeded for local development.
 """
 
+import os
 import uuid
 from collections.abc import Iterator
+from importlib import resources
 
 import pytest
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import Session
 
+from accrueboard.config import get_settings
 from accrueboard.datagen.generate import generate
 from accrueboard.datagen.records import GroundTruth
 from accrueboard.datagen.spec import ClientSpec, load_anomaly_catalog, load_client
 from accrueboard.db.session import get_engine
+
+
+@pytest.fixture(scope="session", autouse=True)
+def test_database() -> Iterator[str]:
+    """Run integration tests against their own database, never the development one.
+
+    Uses TEST_DATABASE_URL if set, otherwise ``<configured database>_test`` on the same server.
+    The database is created if missing and migrated to the latest schema.
+    """
+    settings = get_settings()
+    original = settings.database_url
+    configured = make_url(original)
+    url = make_url(
+        os.environ.get("TEST_DATABASE_URL")
+        or configured.set(database=f"{configured.database}_test")
+    )
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": url.database}
+        ).scalar()
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{url.database}"'))
+    admin.dispose()
+
+    settings.database_url = url.render_as_string(hide_password=False)
+    get_engine.cache_clear()
+    ini = resources.files("accrueboard.db").joinpath("alembic.ini")
+    command.upgrade(Config(str(ini)), "head")
+    try:
+        yield settings.database_url
+    finally:
+        get_engine().dispose()
+        settings.database_url = original
+        get_engine.cache_clear()
 
 
 @pytest.fixture

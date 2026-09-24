@@ -17,14 +17,29 @@ services:
 
   app:
     build: .
-    environment:
+    environment: &app-env
       DATABASE_URL: postgresql+psycopg://accrue:accrue@db:5432/accrueboard
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODE: ${LLM_MODE:-auto}
+      DEMO_MODE: ${DEMO_MODE:-true}
+    volumes:
+      - ./data:/app/data
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8000:8000"
+
+  worker:
+    build: .
+    command: ["accrueboard", "worker"]
+    environment: *app-env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   pgdata:

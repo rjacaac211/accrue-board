@@ -13,8 +13,13 @@ confidence.
 > - the domain core: money, validation, double-entry posting, duplicate and outlier detection,
 >   routing, the task lifecycle and bottleneck rules
 > - the synthetic-data generator
+> - the pipeline: classification, grounded extraction, the account-coding cascade, routing and
+>   posting, run by workers
+> - the coordination API: review actions with a feedback loop, database-enforced audit and
+>   ledger integrity, and live updates over SSE
 >
-> The pipeline, UI and evaluation are in progress; unbuilt parts are marked as planned.
+> The UI, the review assistant and the evaluation are in progress; unbuilt parts are marked as
+> planned.
 
 ## How it works
 
@@ -34,7 +39,7 @@ intake → classify → extract → validate → code → score → route ─┬
 - **Confidence comes from checks, not from the model's opinion of itself.** It is built from
   signals that can be verified: whether an extracted value actually appears in the document,
   whether the arithmetic adds up, whether independent coding methods agree, and whether a
-  second extraction pass agrees with the first. *(planned)*
+  second extraction pass agrees with the first.
 - **Measured, not asserted.** An evaluation suite over seeded synthetic data reports:
   - extraction and coding accuracy
   - anomaly precision and recall
@@ -61,8 +66,8 @@ examples in [`data/sample/`](data/sample/).
 - **Database:** Postgres with pgvector and pg_trgm
 - **Frontend:** React, Vite, TypeScript
 - **LLM:** Anthropic Claude
-- **Retrieval:** local embeddings (fastembed) with full-text search; per-client scikit-learn classifier *(planned)*
-- **Real-time:** Server-Sent Events driven by Postgres `LISTEN/NOTIFY` *(planned)*
+- **Retrieval:** local embeddings (fastembed), Postgres full-text and trigram search; per-client scikit-learn classifier
+- **Real-time:** Server-Sent Events driven by Postgres `LISTEN/NOTIFY`
 
 ## Quick start
 
@@ -84,6 +89,7 @@ uv run poe migrate                        # apply database migrations
 uv run accrueboard datagen                # generate the synthetic dataset into data/generated
 uv run accrueboard seed                   # load the client and 12 months of posted history
 uv run poe dev                            # API on http://localhost:8000
+uv run accrueboard worker                 # process queued documents (needs ANTHROPIC_API_KEY or recordings)
 
 cd ../frontend
 pnpm install

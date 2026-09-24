@@ -9,7 +9,6 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
 
 import pytest
 from sqlalchemy import func, select, text
@@ -23,14 +22,14 @@ from accrueboard.datagen.spec import ClientSpec, Split, load_anomaly_catalog, lo
 from accrueboard.db.models import JournalEntry, LLMCall, Task
 from accrueboard.db.session import get_engine
 from accrueboard.llm.client import FakeLLM
-from accrueboard.llm.types import FilePart, LLMError, LLMRequest
 from accrueboard.pipeline.files import SourceFile
 from accrueboard.pipeline.process import LEASE, PipelineModels, Processor, ingest
 from accrueboard.retrieval.embeddings import HashingEmbedder
 from accrueboard.services import ledger
 from accrueboard.services.seed import seed_client
 from accrueboard.services.tasks import verify_chain
-from tests.unit.pipeline.helpers import truth_output as ground_truth_output
+
+from .helpers import Oracle
 
 pytestmark = pytest.mark.integration
 
@@ -41,34 +40,6 @@ MODELS = PipelineModels(
     code="claude-sonnet-5",
 )
 EMBEDDER = HashingEmbedder(dimensions=384)
-
-
-class Oracle:
-    """Fake model: answers classify/extract from the file's ground truth, coding from the last
-    document it extracted (documents are processed one at a time)."""
-
-    def __init__(self, by_sha: dict[str, GroundTruth]) -> None:
-        self.by_sha = by_sha
-        self.current: GroundTruth | None = None
-        self.fail_for: set[str] = set()
-
-    def __call__(self, request: LLMRequest) -> dict[str, Any]:
-        if request.purpose == "code":
-            assert self.current is not None
-            return {
-                "lines": [
-                    {"line": i, "account": a, "reason": "history"}
-                    for i, a in enumerate(self.current.line_accounts)
-                ]
-            }
-        part = next(p for p in request.parts if isinstance(p, FilePart))
-        record = self.by_sha[part.sha256]
-        if record.doc_id in self.fail_for:
-            raise LLMError("simulated outage")
-        self.current = record
-        if request.purpose == "classify":
-            return {"doc_type": record.document.doc_type.value, "evidence": "title"}
-        return ground_truth_output(record.document)
 
 
 @pytest.fixture(scope="module")
@@ -121,7 +92,10 @@ def test_pipeline_routes_documents_end_to_end(
     ordered = sorted(cases.items(), key=lambda item: (item[1].received_at, item[1].doc_id))
 
     files = {name: render(r, spec) for name, r in cases.items()}
-    oracle = Oracle({hashlib.sha256(data).hexdigest(): cases[name] for name, data in files.items()})
+    oracle = Oracle()
+    oracle.by_sha.update(
+        {hashlib.sha256(data).hexdigest(): cases[name] for name, data in files.items()}
+    )
     oracle.fail_for.add(cases["fails"].doc_id)
     clock = FixedClock(ordered[0][1].received_at)
     processor = Processor(sessions, FakeLLM(oracle), MODELS, EMBEDDER, clock)

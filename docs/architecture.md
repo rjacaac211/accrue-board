@@ -4,8 +4,8 @@
 | Process | Role |
 |---|---|
 | `db` | Postgres 17 with the `vector` and `pg_trgm` extensions. Holds task state, the ledger, the audit log, the knowledge store and the work queue. |
-| `app` | FastAPI. Serves the REST API, the SSE event stream, and the built frontend. |
-| `worker` *(planned)* | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED`, runs the pipeline, and runs the periodic bottleneck check. |
+| `app` | FastAPI. Serves the REST API, the SSE event stream (`/api/events`), and the built frontend. |
+| `worker` | Claims queued tasks with `SELECT … FOR UPDATE SKIP LOCKED` and a lease, runs the pipeline, and requeues tasks whose lease expired. |
 
 ## Task lifecycle
 ```
@@ -44,3 +44,19 @@ Posted → reopen: a reversing journal entry is posted, then → NeedsReview
 See [ADR 0001](adr/0001-fixed-workflow-plus-review-agent.md) for why the pipeline is a fixed
 workflow and only review assistance is an agent, and
 [ADR 0004](adr/0004-database-enforced-integrity.md) for the integrity rules enforced by Postgres.
+
+## API
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/clients/{id}/board` | Active tasks and recently settled ones, with age and alert level |
+| `GET /api/tasks/{id}` | Everything about one task: extraction checks, coding signals, routing decision, audit trail (with chain check), journal entries, model calls and cost |
+| `GET /api/tasks/{id}/file` | The original document |
+| `POST /api/tasks/{id}/approve` | Approve, optionally with a corrected document or accounts; posts and feeds the knowledge store |
+| `POST /api/tasks/{id}/{reject,block,unblock,reopen,retry,assign}` | Other review actions (reject, block and reopen need a reason) |
+| `GET /api/clients/{id}/bottlenecks` | Age-in-stage alerts and review congestion at the current (shared) time |
+| `GET /api/clients/{id}/ledger`, `/knowledge`, `/stats` | Journal and trial balance, knowledge entries, processing statistics |
+| `POST /api/clients/{id}/documents` | Upload a document |
+| `GET /api/events?client_id=` | Server-Sent Events: task changes and a heartbeat |
+| `POST /api/demo/...` | With `DEMO_MODE=true`: advance/reset the shared clock, drip-feed generated documents |
+
+See [ADR 0005](adr/0005-live-updates-and-demo-clock.md).

@@ -44,20 +44,27 @@ uv run accrueboard sample             # one document per layout -> data/sample/ 
 accrual basis and pays US sales tax on purchases. All vendor names, addresses and amounts are
 invented.
 
-- **Chart of accounts:** 29 accounts, including Inventory (asset), Fixed Assets, Accounts
+- **Chart of accounts:** 30 accounts, including Inventory (asset), Fixed Assets, Accounts
   Payable, Card Clearing, freight, packaging, platform fees, software, marketing, rent and
-  utilities.
-- **Recurring vendors (29):** inventory suppliers (tax-exempt, since the stock is bought for
+  utilities, cleaning and breakroom.
+- **Recurring vendors (31):** inventory suppliers (tax-exempt, since the stock is bought for
   resale), freight carriers, packaging, SaaS subscriptions, contractors, rent, utilities, and
   card receipts for office supplies, electronics, meals and travel.
+- **Coding difficulty on purpose:**
+  - Many items have alternative wordings ("LINEN THROW NATURAL 50X60" vs "Throw blanket, linen
+    (natural)"), and half of all lines use one.
+  - Two card vendors (a wholesale club and a print-and-ship shop) sell items that belong in
+    four different accounts, which defeats a per-vendor rule.
+  - Subscription vendors occasionally bill an annual plan, which belongs in Prepaid Expenses
+    rather than the vendor's usual expense account.
 - **New vendors (3):** appear only in the evaluation splits, as first-time-vendor cases.
 
 ## Splits (seed 7)
 | Split | Period | Documents | Purpose |
 |---|---|---|---|
-| history | 2024-12 to 2025-11 | 493 | knowledge-store seed (structured only) |
-| validation | 2025-12 to 2026-02 | 141 | threshold calibration |
-| test | 2026-03 to 2026-08 | 282 | reported results |
+| history | 2024-12 to 2025-11 | 546 | knowledge-store seed (structured only) |
+| validation | 2025-12 to 2026-02 | 153 | threshold calibration |
+| test | 2026-03 to 2026-08 | 307 | reported results |
 
 Each evaluation split contains invoices, receipts (about 60% of them as noisy PNG scans),
 credit notes and unsupported documents (statements and quotations). The test split has 47

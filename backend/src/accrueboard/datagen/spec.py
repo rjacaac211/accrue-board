@@ -22,6 +22,8 @@ class Split(StrEnum):
 
 
 EVAL_SPLITS = (Split.VALIDATION, Split.TEST)
+RECEIPT_WIDTH_CHARS = 34
+"""Longest item wording that fits on one line of a till receipt."""
 
 
 class _Frozen(BaseModel):
@@ -57,6 +59,8 @@ class CatalogItem(_Frozen):
     """Always included on the vendor's documents."""
     rare: bool = False
     """Picked only occasionally (e.g. an expensive one-off item)."""
+    aliases: tuple[str, ...] = ()
+    """Other ways the vendor words the same item on its documents."""
 
 
 class Shipping(_Frozen):
@@ -117,6 +121,15 @@ class ClientSpec(_Frozen):
             for item in vendor.catalog:
                 if item.account not in codes:
                     raise ValueError(f"vendor {vendor.id}: unknown account {item.account}")
+                if vendor.layout == "receipt":
+                    too_long = [
+                        w for w in (item.description, *item.aliases) if len(w) > RECEIPT_WIDTH_CHARS
+                    ]
+                    if too_long:
+                        raise ValueError(
+                            f"vendor {vendor.id}: receipt wording longer than "
+                            f"{RECEIPT_WIDTH_CHARS} characters: {too_long}"
+                        )
             sample = vendor.number_format.format(n=1234)
             if not sample or any(ch.isspace() for ch in sample):
                 raise ValueError(f"vendor {vendor.id}: number_format must not produce whitespace")

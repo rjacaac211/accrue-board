@@ -1,11 +1,11 @@
 [
   {
     "file": "boxed-credit_note.pdf",
-    "doc_id": "fernhill-validation-0073",
+    "doc_id": "fernhill-validation-0034",
     "client_id": "fernhill",
     "split": "validation",
     "vendor_id": "copperleaf",
-    "received_at": "2026-01-16T17:38:00Z",
+    "received_at": "2025-12-22T20:00:00Z",
     "layout": "boxed",
     "file_format": "pdf",
     "copy_of": null,
@@ -13,27 +13,27 @@
       "doc_type": "credit_note",
       "vendor_name": "Copperleaf Candle Company",
       "vendor_state": "WA",
-      "document_number": "CM-0103",
-      "issue_date": "2026-01-14",
+      "document_number": "CM-0102",
+      "issue_date": "2025-12-22",
       "due_date": null,
       "po_number": null,
       "lines": [
         {
-          "description": "Soy candle 8oz - cedar & smoke",
-          "quantity": "1.0000",
-          "unit_price": "6.3800",
-          "amount": "6.38",
+          "description": "Fig + vetiver soy candle 8 oz",
+          "quantity": "6.0000",
+          "unit_price": "6.4100",
+          "amount": "38.46",
           "taxable": false
         }
       ],
-      "subtotal": "6.38",
+      "subtotal": "38.46",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "6.38",
+      "total": "38.46",
       "payment_method": null,
-      "referenced_document_number": "923"
+      "referenced_document_number": "942"
     },
     "line_accounts": [
       "1300"
@@ -46,57 +46,65 @@
           "duplicate_number",
           "duplicate_credit_note"
         ],
-        "related_doc_id": "fernhill-validation-0061"
+        "related_doc_id": "fernhill-validation-0013"
       }
     ],
     "extra": {}
   },
   {
     "file": "boxed-invoice.pdf",
-    "doc_id": "fernhill-validation-0006",
+    "doc_id": "fernhill-validation-0013",
     "client_id": "fernhill",
     "split": "validation",
-    "vendor_id": "lumenstudio",
-    "received_at": "2025-12-06T16:15:00Z",
+    "vendor_id": "copperleaf",
+    "received_at": "2025-12-12T15:51:00Z",
     "layout": "boxed",
     "file_format": "pdf",
     "copy_of": null,
     "document": {
       "doc_type": "invoice",
-      "vendor_name": "Lumen Studio Photography",
-      "vendor_state": "TX",
-      "document_number": "LS3848",
-      "issue_date": "2025-12-05",
-      "due_date": "2025-12-20",
-      "po_number": null,
+      "vendor_name": "Copperleaf Candle Company",
+      "vendor_state": "WA",
+      "document_number": "942",
+      "issue_date": "2025-12-10",
+      "due_date": "2025-12-25",
+      "po_number": "PO-4224",
       "lines": [
         {
-          "description": "Photo retouching (per image)",
-          "quantity": "11.0000",
-          "unit_price": "11.1000",
-          "amount": "122.10",
+          "description": "REED DIFFUSER 100",
+          "quantity": "16.0000",
+          "unit_price": "9.3600",
+          "amount": "149.76",
           "taxable": false
         },
         {
-          "description": "Product photography - half-day session",
-          "quantity": "1.0000",
-          "unit_price": "650.0000",
-          "amount": "650.00",
+          "description": "Fig + vetiver soy candle 8 oz",
+          "quantity": "105.0000",
+          "unit_price": "6.4100",
+          "amount": "673.05",
+          "taxable": false
+        },
+        {
+          "description": "Candle 8oz cedar/smoke",
+          "quantity": "72.0000",
+          "unit_price": "6.6700",
+          "amount": "480.24",
           "taxable": false
         }
       ],
-      "subtotal": "772.10",
+      "subtotal": "1303.05",
       "discount": "0.00",
-      "shipping": "0.00",
+      "shipping": "36.02",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "772.10",
+      "total": "1339.07",
       "payment_method": null,
       "referenced_document_number": null
     },
     "line_accounts": [
-      "6050",
-      "6050"
+      "1300",
+      "1300",
+      "1300"
     ],
     "anomalies": [],
     "hard_negatives": [],
@@ -104,11 +112,11 @@
   },
   {
     "file": "classic-credit_note.pdf",
-    "doc_id": "fernhill-test-0052",
+    "doc_id": "fernhill-validation-0038",
     "client_id": "fernhill",
-    "split": "test",
+    "split": "validation",
     "vendor_id": "oakridge",
-    "received_at": "2026-04-02T13:18:00Z",
+    "received_at": "2025-12-23T22:11:00Z",
     "layout": "classic",
     "file_format": "pdf",
     "copy_of": null,
@@ -116,27 +124,27 @@
       "doc_type": "credit_note",
       "vendor_name": "Oakridge Textiles Inc.",
       "vendor_state": "NC",
-      "document_number": "CM-0103",
-      "issue_date": "2026-03-29",
+      "document_number": "CM-0102",
+      "issue_date": "2025-12-20",
       "due_date": null,
       "po_number": null,
       "lines": [
         {
-          "description": "Linen throw blanket - natural",
-          "quantity": "6.0000",
+          "description": "Throw blanket, linen (natural)",
+          "quantity": "1.0000",
           "unit_price": "20.5700",
-          "amount": "123.42",
+          "amount": "20.57",
           "taxable": false
         }
       ],
-      "subtotal": "123.42",
+      "subtotal": "20.57",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "123.42",
+      "total": "20.57",
       "payment_method": null,
-      "referenced_document_number": "INV-02310"
+      "referenced_document_number": "INV-02691"
     },
     "line_accounts": [
       "1300"
@@ -149,18 +157,18 @@
           "duplicate_number",
           "duplicate_credit_note"
         ],
-        "related_doc_id": "fernhill-test-0041"
+        "related_doc_id": "fernhill-validation-0019"
       }
     ],
     "extra": {}
   },
   {
     "file": "classic-invoice.pdf",
-    "doc_id": "fernhill-validation-0002",
+    "doc_id": "fernhill-validation-0001",
     "client_id": "fernhill",
     "split": "validation",
     "vendor_id": "boxcraft",
-    "received_at": "2025-12-03T16:24:00Z",
+    "received_at": "2025-12-01T22:38:00Z",
     "layout": "classic",
     "file_format": "pdf",
     "copy_of": null,
@@ -168,52 +176,36 @@
       "doc_type": "invoice",
       "vendor_name": "Boxcraft Packaging Supply",
       "vendor_state": "TX",
-      "document_number": "BX-00390",
+      "document_number": "BX-03782",
       "issue_date": "2025-12-01",
       "due_date": "2025-12-31",
       "po_number": null,
       "lines": [
         {
-          "description": "Packing tape 2in x 110yd (6 rolls)",
-          "quantity": "1.0000",
-          "unit_price": "18.6300",
-          "amount": "18.63",
-          "taxable": false
-        },
-        {
-          "description": "Tissue paper - ivory (ream)",
-          "quantity": "4.0000",
-          "unit_price": "20.4600",
-          "amount": "81.84",
+          "description": "Corrugated shipping box 12x10x6 (bundle of 25)",
+          "quantity": "12.0000",
+          "unit_price": "22.9500",
+          "amount": "275.40",
           "taxable": false
         },
         {
           "description": "Kraft padded mailer 10x13 (case of 100)",
-          "quantity": "3.0000",
-          "unit_price": "38.2100",
-          "amount": "114.63",
-          "taxable": false
-        },
-        {
-          "description": "Corrugated shipping box 12x10x6 (bundle of 25)",
-          "quantity": "6.0000",
-          "unit_price": "23.0800",
-          "amount": "138.48",
+          "quantity": "2.0000",
+          "unit_price": "41.3100",
+          "amount": "82.62",
           "taxable": false
         }
       ],
-      "subtotal": "353.58",
+      "subtotal": "358.02",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "353.58",
+      "total": "358.02",
       "payment_method": null,
       "referenced_document_number": null
     },
     "line_accounts": [
-      "5300",
-      "5300",
       "5300",
       "5300"
     ],
@@ -223,54 +215,106 @@
   },
   {
     "file": "compact-invoice.pdf",
-    "doc_id": "fernhill-validation-0007",
+    "doc_id": "fernhill-validation-0011",
     "client_id": "fernhill",
     "split": "validation",
-    "vendor_id": "swiftlane",
-    "received_at": "2025-12-07T18:34:00Z",
+    "vendor_id": "metropower",
+    "received_at": "2025-12-09T21:01:00Z",
     "layout": "compact",
     "file_format": "pdf",
     "copy_of": null,
     "document": {
       "doc_type": "invoice",
-      "vendor_name": "Swiftlane Couriers",
+      "vendor_name": "Metro Power & Light",
       "vendor_state": "TX",
-      "document_number": "SL00329",
-      "issue_date": "2025-12-04",
-      "due_date": "2025-12-18",
+      "document_number": "0000000469",
+      "issue_date": "2025-12-08",
+      "due_date": "2025-12-29",
       "po_number": null,
       "lines": [
         {
-          "description": "Same-day local deliveries",
+          "description": "Electric service - commercial",
           "quantity": "1.0000",
-          "unit_price": "168.6600",
-          "amount": "168.66",
+          "unit_price": "240.3700",
+          "amount": "240.37",
           "taxable": false
         }
       ],
-      "subtotal": "168.66",
+      "subtotal": "240.37",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "168.66",
+      "total": "240.37",
       "payment_method": null,
       "referenced_document_number": null
     },
     "line_accounts": [
-      "5200"
+      "6350"
     ],
     "anomalies": [],
     "hard_negatives": [],
     "extra": {}
   },
   {
+    "file": "ledger-credit_note.pdf",
+    "doc_id": "fernhill-validation-0141",
+    "client_id": "fernhill",
+    "split": "validation",
+    "vendor_id": "silverline",
+    "received_at": "2026-02-25T15:56:00Z",
+    "layout": "ledger",
+    "file_format": "pdf",
+    "copy_of": null,
+    "document": {
+      "doc_type": "credit_note",
+      "vendor_name": "Silverline Glassworks LLC",
+      "vendor_state": "CO",
+      "document_number": "CM-0104",
+      "issue_date": "2026-02-21",
+      "due_date": null,
+      "po_number": null,
+      "lines": [
+        {
+          "description": "Hand-blown bud vase",
+          "quantity": "3.0000",
+          "unit_price": "9.7600",
+          "amount": "29.28",
+          "taxable": false
+        }
+      ],
+      "subtotal": "29.28",
+      "discount": "0.00",
+      "shipping": "0.00",
+      "tax_rate": null,
+      "tax": "0.00",
+      "total": "29.28",
+      "payment_method": null,
+      "referenced_document_number": "SG-3081"
+    },
+    "line_accounts": [
+      "1300"
+    ],
+    "anomalies": [],
+    "hard_negatives": [
+      {
+        "type": "credit_note_for_invoice",
+        "must_not_fire": [
+          "duplicate_number",
+          "duplicate_credit_note"
+        ],
+        "related_doc_id": "fernhill-validation-0112"
+      }
+    ],
+    "extra": {}
+  },
+  {
     "file": "ledger-invoice.pdf",
-    "doc_id": "fernhill-validation-0009",
+    "doc_id": "fernhill-validation-0005",
     "client_id": "fernhill",
     "split": "validation",
     "vendor_id": "socialspark",
-    "received_at": "2025-12-09T20:16:00Z",
+    "received_at": "2025-12-04T20:28:00Z",
     "layout": "ledger",
     "file_format": "pdf",
     "copy_of": null,
@@ -278,9 +322,9 @@
       "doc_type": "invoice",
       "vendor_name": "Socialspark Media",
       "vendor_state": "TX",
-      "document_number": "SSM-2114",
-      "issue_date": "2025-12-06",
-      "due_date": "2025-12-21",
+      "document_number": "SSM-3910",
+      "issue_date": "2025-12-01",
+      "due_date": "2025-12-16",
       "po_number": null,
       "lines": [
         {
@@ -293,17 +337,17 @@
         {
           "description": "Influencer campaign - content package",
           "quantity": "1.0000",
-          "unit_price": "686.2400",
-          "amount": "686.24",
+          "unit_price": "638.7500",
+          "amount": "638.75",
           "taxable": false
         }
       ],
-      "subtotal": "1086.24",
+      "subtotal": "1038.75",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "1086.24",
+      "total": "1038.75",
       "payment_method": null,
       "referenced_document_number": null
     },
@@ -317,11 +361,11 @@
   },
   {
     "file": "minimal-invoice.pdf",
-    "doc_id": "fernhill-validation-0003",
+    "doc_id": "fernhill-validation-0007",
     "client_id": "fernhill",
     "split": "validation",
     "vendor_id": "stackpoint",
-    "received_at": "2025-12-05T19:20:00Z",
+    "received_at": "2025-12-05T22:38:00Z",
     "layout": "minimal",
     "file_format": "pdf",
     "copy_of": null,
@@ -329,7 +373,7 @@
       "doc_type": "invoice",
       "vendor_name": "Stackpoint Email",
       "vendor_state": "NY",
-      "document_number": "SP004400",
+      "document_number": "SP004743",
       "issue_date": "2025-12-03",
       "due_date": null,
       "po_number": null,
@@ -370,11 +414,11 @@
   },
   {
     "file": "modern-credit_note.pdf",
-    "doc_id": "fernhill-validation-0031",
+    "doc_id": "fernhill-test-0207",
     "client_id": "fernhill",
-    "split": "validation",
+    "split": "test",
     "vendor_id": "meadowbrook",
-    "received_at": "2025-12-18T21:41:00Z",
+    "received_at": "2026-07-04T21:12:00Z",
     "layout": "modern",
     "file_format": "pdf",
     "copy_of": null,
@@ -382,27 +426,27 @@
       "doc_type": "credit_note",
       "vendor_name": "Meadowbrook Ceramics Co.",
       "vendor_state": "NC",
-      "document_number": "CM-0102",
-      "issue_date": "2025-12-18",
+      "document_number": "CM-0101",
+      "issue_date": "2026-07-03",
       "due_date": null,
       "po_number": null,
       "lines": [
         {
-          "description": "Matte dinner plate 10.5in",
-          "quantity": "2.0000",
-          "unit_price": "8.1400",
-          "amount": "16.28",
+          "description": "Sand glaze serving bowl",
+          "quantity": "1.0000",
+          "unit_price": "14.2600",
+          "amount": "14.26",
           "taxable": false
         }
       ],
-      "subtotal": "16.28",
+      "subtotal": "14.26",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "16.28",
+      "total": "14.26",
       "payment_method": null,
-      "referenced_document_number": "MB000511"
+      "referenced_document_number": "MB000754"
     },
     "line_accounts": [
       "1300"
@@ -415,18 +459,18 @@
           "duplicate_number",
           "duplicate_credit_note"
         ],
-        "related_doc_id": "fernhill-validation-0014"
+        "related_doc_id": "fernhill-test-0183"
       }
     ],
     "extra": {}
   },
   {
     "file": "modern-invoice.pdf",
-    "doc_id": "fernhill-validation-0001",
+    "doc_id": "fernhill-validation-0002",
     "client_id": "fernhill",
     "split": "validation",
     "vendor_id": "cloudcart",
-    "received_at": "2025-12-02T20:37:00Z",
+    "received_at": "2025-12-02T13:35:00Z",
     "layout": "modern",
     "file_format": "pdf",
     "copy_of": null,
@@ -434,7 +478,7 @@
       "doc_type": "invoice",
       "vendor_name": "Cloudcart Commerce",
       "vendor_state": "CA",
-      "document_number": "CC-0002628",
+      "document_number": "CC-0004355",
       "issue_date": "2025-12-01",
       "due_date": null,
       "po_number": null,
@@ -445,40 +489,55 @@
           "unit_price": "79.0000",
           "amount": "79.00",
           "taxable": false
+        },
+        {
+          "description": "Transaction fees - payment processing",
+          "quantity": "1.0000",
+          "unit_price": "952.6100",
+          "amount": "952.61",
+          "taxable": false
         }
       ],
-      "subtotal": "79.00",
+      "subtotal": "1031.61",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": null,
       "tax": "0.00",
-      "total": "79.00",
+      "total": "1031.61",
       "payment_method": null,
       "referenced_document_number": null
     },
     "line_accounts": [
+      "5400",
       "5400"
     ],
-    "anomalies": [],
+    "anomalies": [
+      {
+        "type": "amount_outlier",
+        "expected_rule": "amount_outlier",
+        "source_doc_id": null,
+        "injected": false
+      }
+    ],
     "hard_negatives": [],
     "extra": {}
   },
   {
     "file": "quote-other.pdf",
-    "doc_id": "fernhill-validation-0024",
+    "doc_id": "fernhill-validation-0051",
     "client_id": "fernhill",
     "split": "validation",
-    "vendor_id": "meadowbrook",
-    "received_at": "2025-12-16T18:50:00Z",
+    "vendor_id": "halecarver",
+    "received_at": "2026-01-02T22:38:00Z",
     "layout": "quote",
     "file_format": "pdf",
     "copy_of": null,
     "document": {
       "doc_type": "other",
-      "vendor_name": "Meadowbrook Ceramics Co.",
-      "vendor_state": "NC",
-      "document_number": "Q-2232",
-      "issue_date": "2025-12-14",
+      "vendor_name": "Hale & Carver CPAs",
+      "vendor_state": "TX",
+      "document_number": "Q-7285",
+      "issue_date": "2026-01-02",
       "due_date": null,
       "po_number": null,
       "lines": [],
@@ -505,16 +564,16 @@
       "kind": "quote",
       "rows": [
         {
-          "description": "Matte dinner plate 10.5in",
-          "quantity": "109",
-          "unit_price": "8.26",
-          "amount": "900.34"
+          "description": "Quarterly bookkeeping review",
+          "quantity": "1",
+          "unit_price": "850.00",
+          "amount": "850.00"
         },
         {
-          "description": "Speckled stoneware mug 12oz",
-          "quantity": "43",
-          "unit_price": "6.07",
-          "amount": "261.01"
+          "description": "Sales tax filing assistance",
+          "quantity": "1",
+          "unit_price": "225.00",
+          "amount": "225.00"
         }
       ],
       "valid_days": 30
@@ -522,66 +581,66 @@
   },
   {
     "file": "receipt-receipt.pdf",
-    "doc_id": "fernhill-validation-0011",
+    "doc_id": "fernhill-validation-0012",
     "client_id": "fernhill",
     "split": "validation",
-    "vendor_id": "staplewise",
-    "received_at": "2025-12-10T15:02:00Z",
+    "vendor_id": "metrowholesale",
+    "received_at": "2025-12-11T19:33:00Z",
     "layout": "receipt",
     "file_format": "pdf",
     "copy_of": null,
     "document": {
       "doc_type": "receipt",
-      "vendor_name": "Staplewise Office Supply",
+      "vendor_name": "Metro Wholesale Club",
       "vendor_state": "TX",
-      "document_number": "003987",
-      "issue_date": "2025-12-06",
+      "document_number": "MW00002670",
+      "issue_date": "2025-12-09",
       "due_date": null,
       "po_number": null,
       "lines": [
         {
-          "description": "Shipping label pads",
-          "quantity": "2.0000",
-          "unit_price": "12.5600",
-          "amount": "25.12",
-          "taxable": true
-        },
-        {
-          "description": "Black ink cartridge 2-pack",
-          "quantity": "2.0000",
-          "unit_price": "42.8900",
-          "amount": "85.78",
-          "taxable": true
-        },
-        {
-          "description": "Copy paper letter (case)",
+          "description": "Bottled water 40-pack",
           "quantity": "1.0000",
-          "unit_price": "46.3300",
-          "amount": "46.33",
+          "unit_price": "6.7300",
+          "amount": "6.73",
           "taxable": true
         },
         {
-          "description": "Desk organizer",
+          "description": "WIPES DISINF 3PK",
           "quantity": "1.0000",
-          "unit_price": "20.1700",
-          "amount": "20.17",
+          "unit_price": "13.5500",
+          "amount": "13.55",
+          "taxable": true
+        },
+        {
+          "description": "PAPER COPY CASE 10RM",
+          "quantity": "1.0000",
+          "unit_price": "47.5900",
+          "amount": "47.59",
+          "taxable": true
+        },
+        {
+          "description": "TABLE FOLDING 6FT",
+          "quantity": "2.0000",
+          "unit_price": "65.8300",
+          "amount": "131.66",
           "taxable": true
         }
       ],
-      "subtotal": "177.40",
+      "subtotal": "199.53",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": "0.0825",
-      "tax": "14.64",
-      "total": "192.04",
+      "tax": "16.46",
+      "total": "215.99",
       "payment_method": "card",
       "referenced_document_number": null
     },
     "line_accounts": [
+      "6750",
+      "6750",
       "6100",
-      "6100",
-      "6100",
-      "6100"
+      "6150"
     ],
     "anomalies": [],
     "hard_negatives": [],
@@ -589,42 +648,50 @@
   },
   {
     "file": "receipt-receipt.png",
-    "doc_id": "fernhill-validation-0048",
+    "doc_id": "fernhill-validation-0003",
     "client_id": "fernhill",
     "split": "validation",
-    "vendor_id": "tekmart",
-    "received_at": "2026-01-01T21:35:00Z",
+    "vendor_id": "cornerbistro",
+    "received_at": "2025-12-02T16:27:00Z",
     "layout": "receipt",
     "file_format": "png",
     "copy_of": null,
     "document": {
       "doc_type": "receipt",
-      "vendor_name": "Tekmart Business Electronics",
+      "vendor_name": "Corner Bistro",
       "vendor_state": "TX",
-      "document_number": "TM0003900",
-      "issue_date": "2025-12-29",
+      "document_number": "01503",
+      "issue_date": "2025-12-02",
       "due_date": null,
       "po_number": null,
       "lines": [
         {
-          "description": "HDMI cables 3-pack",
+          "description": "Lunch meeting (staff)",
           "quantity": "1.0000",
-          "unit_price": "19.6300",
-          "amount": "19.63",
+          "unit_price": "48.3000",
+          "amount": "48.30",
+          "taxable": true
+        },
+        {
+          "description": "Coffee and pastries",
+          "quantity": "1.0000",
+          "unit_price": "25.7500",
+          "amount": "25.75",
           "taxable": true
         }
       ],
-      "subtotal": "19.63",
+      "subtotal": "74.05",
       "discount": "0.00",
       "shipping": "0.00",
       "tax_rate": "0.0825",
-      "tax": "1.62",
-      "total": "21.25",
+      "tax": "6.11",
+      "total": "80.16",
       "payment_method": "card",
       "referenced_document_number": null
     },
     "line_accounts": [
-      "6100"
+      "6550",
+      "6550"
     ],
     "anomalies": [],
     "hard_negatives": [],
@@ -632,20 +699,20 @@
   },
   {
     "file": "statement-other.pdf",
-    "doc_id": "fernhill-validation-0110",
+    "doc_id": "fernhill-test-0009",
     "client_id": "fernhill",
-    "split": "validation",
-    "vendor_id": "fixright",
-    "received_at": "2026-02-09T13:27:00Z",
+    "split": "test",
+    "vendor_id": "cloudcart",
+    "received_at": "2026-03-06T21:51:00Z",
     "layout": "statement",
     "file_format": "pdf",
     "copy_of": null,
     "document": {
       "doc_type": "other",
-      "vendor_name": "FixRight Facilities",
-      "vendor_state": "TX",
+      "vendor_name": "Cloudcart Commerce",
+      "vendor_state": "CA",
       "document_number": null,
-      "issue_date": "2026-02-07",
+      "issue_date": "2026-03-02",
       "due_date": null,
       "po_number": null,
       "lines": [],
@@ -672,27 +739,27 @@
       "kind": "statement",
       "rows": [
         {
-          "date": "2025-07-07",
-          "number": "FR03497",
-          "amount": "160.57"
+          "date": "2025-12-01",
+          "number": "CC-0004355",
+          "amount": "1031.61"
         },
         {
-          "date": "2025-09-12",
-          "number": "FR03501",
-          "amount": "288.93"
+          "date": "2026-01-01",
+          "number": "CC-0004359",
+          "amount": "79.00"
         },
         {
-          "date": "2025-11-17",
-          "number": "FR03505",
-          "amount": "374.07"
+          "date": "2026-02-01",
+          "number": "CC-0004366",
+          "amount": "79.00"
         },
         {
-          "date": "2026-01-23",
-          "number": "FR03512",
-          "amount": "201.29"
+          "date": "2026-03-01",
+          "number": "CC-0004371",
+          "amount": "797.01"
         }
       ],
-      "balance": "1024.86"
+      "balance": "1986.62"
     }
   }
 ]

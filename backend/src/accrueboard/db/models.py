@@ -212,3 +212,12 @@ class LLMCall(Base):
     output_tokens: Mapped[int] = mapped_column(Integer)
     replayed: Mapped[bool] = mapped_column(Boolean)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class AppSetting(Base):
+    """Small key/value settings shared by the API and workers (e.g. the demo clock offset)."""
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[dict[str, Any]] = mapped_column(JSONB)

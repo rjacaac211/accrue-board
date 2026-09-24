@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     recordings_dir: Path = Path(__file__).resolve().parents[3] / "data" / "recordings"
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_cache_dir: Path = Path(__file__).resolve().parents[3] / "data" / "models"
+    embedder: str = "fast"
+    """fast = local ONNX model; hashing = dependency-free embedder (tests, offline demos)."""
+    demo_mode: bool = False
+    """Enables demo endpoints: fast-forwarding the shared clock and drip-feeding documents."""
 
 
 @lru_cache
